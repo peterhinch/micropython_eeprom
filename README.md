@@ -1,7 +1,7 @@
-# 1. micropython_eeprom
+# 1. A MicroPython EEPROM driver
 
-A driver to enable MicroPython to access Microchip EEPROM devices. Unlike flash
-memory EEPROMs may be written on a byte addressable basis. Its endurance is
+This enables MicroPython to access Microchip EEPROM devices. Unlike flash
+memory, EEPROMs may be written on a byte addressable basis. Its endurance is
 specified as a million writes compared to the 10K typical of most flash memory.
 In applications such as data logging the latter can be exceeded relatively
 rapidly.
@@ -59,13 +59,15 @@ Multiple chips should have 3V3, Gnd, SCL and SDA lines wired in parallel.
 
 The I2C interface requires pullups, typically 3.3KΩ to 3.3V although any value
 up to 10KΩ will suffice. The Pyboard 1.x has these on board. The Pyboard D has
-them only on I2C(1). If you use a Pyboard D and power the EEPROMs from the 3V3
-output you will need to enable the voltage rail by issuing:
+them only on I2C(1). Even if boards have pullups, additional externalresistors
+will do no harm.
+
+If you use a Pyboard D and power the EEPROMs from the 3V3 output you will need
+to enable the voltage rail by issuing:
 ```python
 machine.Pin.board.EN_3V3.value(1)
 ```
-Other platforms may vary. Even if boards have pullups connecting external
-resistors will do no harm.
+Other platforms may vary.
 
 # 3. Files
 
@@ -76,7 +78,7 @@ resistors will do no harm.
 
 The driver supports mounting the EEPROM chips as a filesystem. Initially the
 device will be unformatted so it is necessary to issue code along these lines to
-format the device. Code assumes a 64KiB device:
+format the device. Code assumes one or more 64KiB devices:
 
 ```python
 import uos
@@ -195,8 +197,8 @@ back, and checks the outcome. Existing array data will be lost.
 ## 5.3 fstest(format=False)
 
 If `True` is passed, formats the EEPROM array as a FAT filesystem and mounts
-the device on `/eeprom`. If no arg is passed it simply the array and lists the
-contents.
+the device on `/eeprom`. If no arg is passed it mounts the array and lists the
+contents. It also prints the outcome of `uos.statvfs` on the array.
 
 ## 5.4 File copy
 

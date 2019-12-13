@@ -1,11 +1,11 @@
-# eep_test.py MicroPython driver for Microchip EEPROM devices.
+# eep_i2c.py MicroPython test program for Microchip I2C EEPROM devices.
 
 # Released under the MIT License (MIT). See LICENSE.
 # Copyright (c) 2019 Peter Hinch
 
 import uos
 from machine import I2C, Pin
-from eeprom import EEPROM, T24C512
+from eeprom_i2c import EEPROM, T24C512
 
 # Return an EEPROM array. Adapt for platforms other than Pyboard or chips
 # smaller than 64KiB.

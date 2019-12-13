@@ -1,4 +1,4 @@
-# eeprom.py MicroPython driver for Microchip EEPROM devices.
+# eeprom_i2c.py MicroPython driver for Microchip I2C EEPROM devices.
 
 # Released under the MIT License (MIT). See LICENSE.
 # Copyright (c) 2019 Peter Hinch
@@ -27,6 +27,14 @@ class EEPROM():
         self._i2c_addr = 0  # I2C address of current chip
         self._buf1 = bytearray(1)
         self._addrbuf = bytearray(2)  # Memory offset into current chip
+
+    # Handle special cases of a slice. Always return a pair of positive indices.
+    def do_slice(self, addr):
+        start = addr.start if addr.start is not None else 0
+        stop = addr.stop if addr.stop is not None else self._a_bytes
+        start = start if start >= 0 else self._a_bytes + start
+        stop = stop if stop >= 0 else self._a_bytes + stop
+        return start, stop
 
     # Check for a valid hardware configuration
     def scan(self, verbose, chip_size):
@@ -58,9 +66,10 @@ class EEPROM():
 
     def __setitem__(self, addr, value):
         if isinstance(addr, slice):
+            start, stop = self.do_slice(addr)
             try:
-                if len(value) == (addr.stop - addr.start):
-                    return self.readwrite(addr.start, value, False)
+                if len(value) == (stop - start):
+                    return self.readwrite(start, value, False)
                 else:
                     raise RuntimeError('Slice must have same length as data')
             except TypeError:
@@ -72,8 +81,9 @@ class EEPROM():
 
     def __getitem__(self, addr):
         if isinstance(addr, slice):
-            buf = bytearray(addr.stop - addr.start)
-            return self.readwrite(addr.start, buf, True)
+            start, stop = self.do_slice(addr)
+            buf = bytearray(stop - start)
+            return self.readwrite(start, buf, True)
         self._getaddr(addr, 1)
         self._i2c.writeto(self._i2c_addr, self._addrbuf)
         self._i2c.readfrom_into(self._i2c_addr, self._buf1)

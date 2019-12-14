@@ -6,41 +6,32 @@
 
 import time
 from micropython import const
+from bdevice import BlockDevice
 
 _SIZE = const(131072)  # Chip size 128KiB
 # Supported instruction set
 _READ = const(3)
 _WRITE = const(2)
-_WREN = const(6)
-_WRDI = const(4)
-_RDSR = const(5)
-_WRSR = const(1)
-_RDID = const(0xab)
-_CE = const(0xc7)
+_WREN = const(6)  # Write enable
+_RDSR = const(5)  # Read status register
+_RDID = const(0xab)  # Read chip ID
+_CE = const(0xc7)  # Chip erase
+# Not implemented: Write disable and Write status register
+# _WRDI = const(4)
+# _WRSR = const(1)
 
-# Logical EEPROM device consisting of an arbitrary number of physical chips
-# sharing an SPI bus.
-class EEPROM():
+# Logical EEPROM device comprising one or more physical chips sharing an SPI bus.
+class EEPROM(BlockDevice):
 
     def __init__(self, spi, cspins, verbose=True):
+        # args: virtual block size in bits, no. of chips, bytes in each chip
+        super().__init__(9, len(cspins), _SIZE)
         self._spi = spi
         self._cspins = cspins
-        nchips = len(cspins)  # No. of EEPROM chips
-        # size as a bound variable for future bigger chips
-        self._c_bytes = _SIZE  # Size of chip in bytes
-        self._a_bytes = _SIZE * nchips  # Size of array
         self._ccs = None  # Chip select Pin object for current chip
         self._bufp = bytearray(5)  # instruction + 3 byte address + 1 byte value
         self._mvp = memoryview(self._bufp)  # cost-free slicing
         self.scan(verbose)
-
-    # Handle special cases of a slice. Always return a pair of positive indices.
-    def do_slice(self, addr):
-        start = addr.start if addr.start is not None else 0
-        stop = addr.stop if addr.stop is not None else self._a_bytes
-        start = start if start >= 0 else self._a_bytes + start
-        stop = stop if stop >= 0 else self._a_bytes + stop
-        return start, stop
 
     # Check for a valid hardware configuration
     def scan(self, verbose):
@@ -70,9 +61,6 @@ class EEPROM():
             cs(1)
             self._wait_rdy()  # Wait for erase to complete
 
-    def __len__(self):
-        return self._a_bytes
-
     def _wait_rdy(self):  # After a write, wait for device to become ready
         mvp = self._mvp
         cs = self._ccs  # Chip is already current
@@ -81,8 +69,7 @@ class EEPROM():
             cs(0)
             self._spi.write_readinto(mvp[:2], mvp[:2])
             cs(1)
-            assert not mvp[1] & 0xC  # BP0, BP1 assumed 0
-            if not (mvp[1] & 1):
+            if not mvp[1]:  # We never set BP0 or BP1 so ready state is 0.
                 break
             time.sleep_ms(1)
 
@@ -169,17 +156,3 @@ class EEPROM():
             start += npage
             addr += npage
         return buf
-
-    # IOCTL protocol. Emulate block size of 512 bytes.
-    def readblocks(self, blocknum, buf):
-        return self.readwrite(blocknum << 9, buf, True)
-
-    def writeblocks(self, blocknum, buf):
-        self.readwrite(blocknum << 9, buf, False)
-
-    def ioctl(self, op, arg):
-        #print("ioctl(%d, %r)" % (op, arg))
-        if op == 4:  # BP_IOCTL_SEC_COUNT
-            return self._a_bytes >> 9
-        if op == 5:  # BP_IOCTL_SEC_SIZE
-            return 512

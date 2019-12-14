@@ -46,7 +46,10 @@ Other platforms may vary.
 # 3. Files
 
  1. `eeprom_spi.py` Device driver.
- 2. `eep_spi.py` Test programs for above.
+ 2. `bdevice.py` (In root directory) Base class for the device driver.
+ 3. `eep_spi.py` Test programs for above.
+
+Installation: copy files 1 and 2 (optionally 3) to the target filesystem.
 
 # 4. The device driver
 
@@ -68,10 +71,10 @@ The above will reformat a drive with an existing filesystem: to mount an
 existing filesystem simply omit the commented line.
 
 Note that, at the outset, you need to decide whether to use the array as a
-mounted filesystem or as a byte array. As a filesystem the limited size is an
-issue, but a potential use case is for pickling Python objects for example to
-achieve persistence when issuing `pyb.standby()`; also for holding a small
-frequently updated persistent btree database.
+mounted filesystem or as a byte array. The filesystem is relatively small but
+has high integrity owing to the hardware longevity. Typical use-cases involve
+files which are frequently updated. These include files used for storing Python
+objects serialised using Pickle/ujson or files holding a btree database.
 
 The SPI bus must be instantiated using the `machine` module.
 
@@ -125,8 +128,9 @@ eep = EEPROM(SPI(2, baudrate=20_000_000), cspins)
 eep[2000:2002] = bytearray((42, 43))
 print(eep[2000:2002])  # Returns a bytearray
 ```
-Three argument slices are not supported: any third arg will be ignored. One
-argument slices (`eep[:5]` or `eep[13100:]`) and negative args are supported.
+Three argument slices are not supported: a third arg (other than 1) will cause
+an exception. One argument slices (`eep[:5]` or `eep[13100:]`) and negative
+args are supported.
 
 #### 4.1.2.2 readwrite
 
@@ -139,23 +143,14 @@ advantage of using a pre-allocated buffer. Arguments:
  determines the quantity of data read or written. A `RuntimeError` will be
  thrown if the read or write extends beyond the end of the physical space.
 
-### 4.1.3 Methods providing the block protocol
+### 4.1.3 Other methods
 
-For the protocol definition see
-[the pyb documentation](http://docs.micropython.org/en/latest/library/uos.html#uos.AbstractBlockDev)
-
-`readblocks()`  
-`writeblocks()`  
-`ioctl()`
-
-### 4.1.4 Other methods
-
-#### 4.1.4.1 The len() operator
+#### The len() operator
 
 The size of the EEPROM array in bytes may be retrieved by issuing `len(eep)`
 where `eep` is the `EEPROM` instance.
 
-#### 4.1.4.2 scan
+#### scan
 
 Activate each chip select in turn checking for a valid device and returns the
 number of EEPROM devices detected. A `RuntimeError` will be raised if any CS
@@ -165,9 +160,19 @@ Other than for debugging there is no need to call `scan()`: the constructor
 will throw a `RuntimeError` if it fails to communicate with and correctly
 identify the chip.
 
-#### 4.1.4.3 erase
+#### erase
 
 Erases the entire array.
+
+### 4.1.4 Methods providing the block protocol
+
+These are provided by the base class. For the protocol definition see
+[the pyb documentation](http://docs.micropython.org/en/latest/library/uos.html#uos.AbstractBlockDev)
+also [here](http://docs.micropython.org/en/latest/reference/filesystem.html#custom-block-devices).
+
+`readblocks()`  
+`writeblocks()`  
+`ioctl()`
 
 # 5. Test program eep_spi.py
 

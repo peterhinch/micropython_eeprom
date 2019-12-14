@@ -5,6 +5,7 @@
 
 import time
 from micropython import const
+from bdevice import BlockDevice
 
 ADDR = const(0x50)  # Base address of chip
 
@@ -15,26 +16,17 @@ T24C64 = const(8192)  # 8KiB 64Kbits
 
 # Logical EEPROM device consists of 1-8 physical chips. Chips must all be the
 # same size, and must have contiguous addresses starting from 0x50.
-class EEPROM():
+class EEPROM(BlockDevice):
 
     def __init__(self, i2c, chip_size=T24C512, verbose=True):
         self._i2c = i2c
         if chip_size not in (T24C64, T24C128, T24C256, T24C512):
             raise RuntimeError('Invalid chip size', chip_size)
         nchips = self.scan(verbose, chip_size)  # No. of EEPROM chips
-        self._c_bytes = chip_size  # Size of chip in bytes
-        self._a_bytes = chip_size * nchips  # Size of array
+        super().__init__(9, nchips, chip_size)
         self._i2c_addr = 0  # I2C address of current chip
         self._buf1 = bytearray(1)
         self._addrbuf = bytearray(2)  # Memory offset into current chip
-
-    # Handle special cases of a slice. Always return a pair of positive indices.
-    def do_slice(self, addr):
-        start = addr.start if addr.start is not None else 0
-        stop = addr.stop if addr.stop is not None else self._a_bytes
-        start = start if start >= 0 else self._a_bytes + start
-        stop = stop if stop >= 0 else self._a_bytes + stop
-        return start, stop
 
     # Check for a valid hardware configuration
     def scan(self, verbose, chip_size):
@@ -49,9 +41,6 @@ class EEPROM():
             s = '{} chips detected. Total EEPROM size {}bytes.'
             print(s.format(nchips, chip_size * nchips))
         return nchips
-
-    def __len__(self):
-        return self._a_bytes
 
     def _wait_rdy(self):  # After a write, wait for device to become ready
         self._buf1[0] = 0
@@ -119,17 +108,3 @@ class EEPROM():
             start += npage
             addr += npage
         return buf
-
-    # IOCTL protocol. Emulate block size of 512 bytes for now.
-    def readblocks(self, blocknum, buf):
-        return self.readwrite(blocknum << 9, buf, True)
-
-    def writeblocks(self, blocknum, buf):
-        self.readwrite(blocknum << 9, buf, False)
-
-    def ioctl(self, op, arg):
-        #print("ioctl(%d, %r)" % (op, arg))
-        if op == 4:  # BP_IOCTL_SEC_COUNT
-            return self._a_bytes >> 9
-        if op == 5:  # BP_IOCTL_SEC_SIZE
-            return 512

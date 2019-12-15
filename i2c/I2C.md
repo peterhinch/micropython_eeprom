@@ -8,7 +8,7 @@ with sizes upto 512KiB. The driver allows the memory either to be mounted in
 the target filesystem as a disk device or to be addressed as an array of bytes.
 Where multiple chips are used, all must be the same size.
 
-The work was inspired by [this one](https://github.com/dda/MicroPython.git).
+The work was inspired by [this driver](https://github.com/dda/MicroPython.git).
 This was written some five years ago. The driver in this repo employs some of
 the subsequent improvements to MicroPython to achieve these advantages:
  1. It supports multiple EEPROM chips to configure a single array.
@@ -121,6 +121,11 @@ Arguments:
 
 ### 4.1.2 Methods providing byte level access
 
+It is possible to read and write individual bytes or arrays of arbitrary size.
+Larger arrays are faster, especially when writing: the driver uses the chip's
+hardware page access where possible. Writing a page (128 bytes) takes the same
+time (~5ms) as writing a single byte.
+
 #### 4.1.2.1 `__getitem__` and `__setitem__`
 
 These provides single byte or multi-byte access using slice notation. Example
@@ -149,7 +154,7 @@ args are supported.
 #### 4.1.2.2 readwrite
 
 This is a byte-level alternative to slice notation. It has the potential
-advantage of using a pre-allocated buffer. Arguments:  
+advantage when reading of using a pre-allocated buffer. Arguments:  
  1. `addr` Starting byte address  
  2. `buf` A `bytearray` or `bytes` instance containing data to write. In the
  read case it must be a (mutable) `bytearray` to hold data read.  

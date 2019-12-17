@@ -47,18 +47,19 @@ letters denoted by "xx" below. The variants cover parameters such as minimum
 Vcc value and do not affect the API.
 
 In the table below the Interface column includes page size in bytes.  
-| Manufacurer | Part     | Interface | Bytes  | Technology | Docs      |
-|:-----------:|:--------:|:---------:|:------:|:----------:|:---------:|
-| Microchip   | 25xx1024 | SPI 256   | 128KiB |   EEPROM   | [SPI.md]  |
-| Microchip   | 24xx512  | I2C 128   |  64KiB |   EEPROM   | [I2C.md]  |
-| Microchip   | 24xx256  | I2C 128   |  32KiB |   EEPROM   | [I2C.md]  |
-| Microchip   | 24xx128  | I2C 128   |  16KiB |   EEPROM   | [I2C.md]  |
-| Microchip   | 24xx64   | I2C 128   |   8KiB |   EEPROM   | [I2C.md]  |
-| Adafruit    | 1895     | I2C n/a   |  32KiB |   FRAM     | [FRAM.md] |
+| Manufacurer | Part     | Interface | Bytes  | Technology | Docs    |
+|:-----------:|:--------:|:---------:|:------:|:----------:|:-------:|
+| Microchip   | 25xx1024 | SPI 256   | 128KiB |   EEPROM   | SPI.md  |
+| Microchip   | 24xx512  | I2C 128   |  64KiB |   EEPROM   | I2C.md  |
+| Microchip   | 24xx256  | I2C 128   |  32KiB |   EEPROM   | I2C.md  |
+| Microchip   | 24xx128  | I2C 128   |  16KiB |   EEPROM   | I2C.md  |
+| Microchip   | 24xx64   | I2C 128   |   8KiB |   EEPROM   | I2C.md  |
+| Adafruit    | 1895     | I2C n/a   |  32KiB |   FRAM     | FRAM.md |
 
-[SPI.md](./spi/SPI.md)
-[I2C.md](./i2c/I2C.md)
-[FRAM.md](./fram/FRAM.md)
+Documentation:  
+[SPI.md](./spi/SPI.md)  
+[I2C.md](./i2c/I2C.md)  
+[FRAM.md](./fram/FRAM.md)  
 
 ## 1.4 Performance
 

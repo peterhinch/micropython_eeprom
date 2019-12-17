@@ -47,16 +47,6 @@ letters denoted by "xx" below. The variants cover parameters such as minimum
 Vcc value and do not affect the API.
 
 In the table below the Interface column includes page size in bytes.  
-| Manufacturer | Part     | Interface | Bytes  |
-|:------------:|:--------:|:---------:|:------:|
-| Microchip    | 25xx1024 | SPI 256   | 128KiB |
-| Microchip    | 24xx512  | I2C 128   |  64KiB |
-| Microchip    | 24xx256  | I2C 128   |  32KiB |
-| Microchip    | 24xx128  | I2C 128   |  16KiB |
-| Microchip    | 24xx64   | I2C 128   |   8KiB |
-| Adafruit     | 1895     | I2C n/a   |  32KiB |
-
-
 
 | Manufacturer | Part     | Interface | Bytes  | Technology | Docs                      |
 |:------------:|:--------:|:---------:|:------:|:----------:|:-------------------------:|

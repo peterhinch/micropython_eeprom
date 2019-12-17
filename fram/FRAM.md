@@ -233,13 +233,7 @@ cp('/flash/main.py','/fram/')
 See `upysh` in [micropython-lib](https://github.com/micropython/micropython-lib.git)
 for other filesystem tools for use at the REPL.
 
-# 6. ESP8266
-
-Currently the ESP8266 does not support concurrent mounting of multiple
-filesystems. Consequently the onboard flash must be unmounted (with
-`uos.umount()`) before the FRAM can be mounted.
-
-# 7. References
+# 6. References
 
 [Adafruit board](http://www.adafruit.com/product/1895)
 [Chip datasheet](https://cdn-learn.adafruit.com/assets/assets/000/043/904/original/MB85RC256V-DS501-00017-3v0-E.pdf?1500009796)

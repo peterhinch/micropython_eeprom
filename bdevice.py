@@ -61,3 +61,6 @@ class BlockDevice:
             return self._a_bytes >> self._nbits
         if op == 5:  # BP_IOCTL_SEC_SIZE
             return self._block_size
+        if op == 6:  # Erase
+            return 0
+

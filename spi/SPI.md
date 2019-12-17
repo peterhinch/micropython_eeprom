@@ -259,9 +259,3 @@ cp('/flash/main.py','/eeprom/')
 
 See `upysh` in [micropython-lib](https://github.com/micropython/micropython-lib.git)
 for other filesystem tools for use at the REPL.
-
-# 6. ESP8266
-
-Currently the ESP8266 does not support concurrent mounting of multiple
-filesystems. Consequently the onboard flash must be unmounted (with
-`uos.umount()`) before the EEPROM can be mounted.

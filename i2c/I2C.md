@@ -113,11 +113,13 @@ is detected or if device address lines are not wired as described in
 [Connections](./README.md#2-connections).
 
 Arguments:  
- 1. `i2c` Mandatory. An initialised master mode I2C bus.
+ 1. `i2c` Mandatory. An initialised master mode I2C bus created by `machine`.
  2. `chip_size=T24C512` The chip size in bits. The module provides constants
  `T24C64`, `T24C128`, `T24C256`, `T24C512` for the supported chip sizes.
- 3. `verbose=True` If True, the constructor issues information on the EEPROM
+ 3. `verbose=True` If `True`, the constructor issues information on the EEPROM
  devices it has detected.
+ 4. `block_size=9` The block size reported to the filesystem. The size in bytes
+ is `2**block_size` so is 512 bytes by default.
 
 ### 4.1.2 Methods providing byte level access
 
@@ -149,7 +151,8 @@ print(eep[2000:2002])  # Returns a bytearray
 ```
 Three argument slices are not supported: a third arg (other than 1) will cause
 an exception. One argument slices (`eep[:5]` or `eep[13100:]`) and negative
-args are supported.
+args are supported. See [section 4.2](./I2C.md#42-byte-addressing-usage-example)
+for a typical application.
 
 #### 4.1.2.2 readwrite
 
@@ -187,6 +190,36 @@ also [here](http://docs.micropython.org/en/latest/reference/filesystem.html#cust
 `writeblocks()`  
 `ioctl()`
 
+## 4.2 Byte addressing usage example
+
+A sample application: saving a configuration dict (which might be large and
+complicated):
+```python
+import ujson
+from machine import I2C
+from eeprom_i2c import EEPROM, T24C512
+eep = EEPROM(I2C(2), T24C512)
+d = {1:'one', 2:'two'}  # Some kind of large object
+wdata = ujson.dumps(d).encode('utf8')
+sl = '{:10d}'.format(len(wdata)).encode('utf8')
+eep[0 : len(sl)] = sl  # Save data length in locations 0-9
+start = 10  # Data goes in 10:
+end = start + len(wdata)
+eep[start : end] = wdata
+```
+After a power cycle the data may be read back. Instantiate `eep` as above, then
+issue:
+```python
+slen = int(eep[:10].decode().strip())  # retrieve object size
+start = 10
+end = start + slen
+d = ujson.loads(eep[start : end])
+```
+It is much more efficient in space and performance to store data in binary form
+but in many cases code simplicity matters, especially where the data structure
+is subject to change. An alternative to JSON is the pickle module. It is also
+possible to use JSON/pickle to store objects in a filesystem.
+
 # 5. Test program eep_i2c.py
 
 This assumes a Pyboard 1.x or Pyboard D with EEPROM(s) wired as above. It
@@ -195,12 +228,14 @@ provides the following.
 ## 5.1 test()
 
 This performs a basic test of single and multi-byte access to chip 0. The test
-reports how many chips can be accessed. Existing array data will be lost.
+reports how many chips can be accessed. Existing array data will be lost. This
+primarily tests the driver: as a hardware test it is not exhaustive.
 
 ## 5.2 full_test()
 
-Tests the entire array. Fills each 128 byte page with random data, reads it
-back, and checks the outcome. Existing array data will be lost.
+This is a hardware test. Tests the entire array. Fills each 128 byte page with
+random data, reads it back, and checks the outcome. Existing array data will be
+lost.
 
 ## 5.3 fstest(format=False)
 
@@ -208,7 +243,13 @@ If `True` is passed, formats the EEPROM array as a FAT filesystem and mounts
 the device on `/eeprom`. If no arg is passed it mounts the array and lists the
 contents. It also prints the outcome of `uos.statvfs` on the array.
 
-## 5.4 File copy
+## 5.4 cptest()
+
+Tests copying the source files to the filesystem. The test will fail if the
+filesystem was not formatted. Lists the contents of the mountpoint and prints
+the outcome of `uos.statvfs`.
+
+## 5.5 File copy
 
 A rudimentary `cp(source, dest)` function is provided as a generic file copy
 routine for setup and debugging purposes at the REPL. The first argument is the

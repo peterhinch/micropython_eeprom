@@ -1,32 +1,76 @@
-# MicroPython EEPROM drivers
+# 1. MicroPython drivers for nonvolatile memory
 
-EEPROM is a form of nonvolatile random access storage.
+These drivers support nonvolatile memory chips.
 
-These drivers enable MicroPython to access Microchip EEPROM devices. There are
-two variants, one for chips based on the I2C interface and a second for a 1MBit
-SPI chip.
+Currently supported devices use technologies having superior performance
+compared to flash. Resultant storage has much higher write endurance. In some
+cases read and write access times may be shorter. EEPROM and FRAM chips have
+much lower standby current than SD cards, benefiting micropower applications.
 
-Unlike flash memory, EEPROMs may be written on a byte addressable basis. Their
-endurance is specified as a million writes compared to the 10K typical of most
-flash memory. In applications such as data logging the latter can be exceeded
-relatively rapidly. For extreme endurance ferroelectric RAM has almost infinite
-endurance but at higher cost per byte. See [this driver](https://github.com/peterhinch/micropython-fram).
+The drivers present a common API having the features listed below.
+
+## 1.1 Features common to all drivers
+
+The drivers have the following common features:
+ 1. Support for single or multiple chips on the same bus. Multiple chips are
+ automatically configured as a single array.
+ 2. This can be accessed as an array of bytes, using Python slice syntax or via
+ a `readwrite` method.
+ 3. Alternatively the array can be formatted and mounted as a filesystem using
+ methods in the `uos` module. Any filesystem supported by the MicroPython build
+ may be employed.
+ 4. Drivers are portable: buses and pins should be instantiated using the
+ `machine` module.
+ 5. Buses may be shared with other hardware. This assumes that the application
+ pays due accord to differing electrical constraints such as baudrate.
+
+## 1.2 Technologies
+
+Currently supported technologies are EEPROM and FRAM (ferroelectric RAM). These
+are nonvolatile random access storage devices with much higher endurance than
+flash memory. Flash has a typical endurance of 10K writes per page. The figures
+for EEPROM and FRAM are 1M and 10^12 writes respectively. In the case of the
+FAT filing system 1M page writes probably corresponds to 1M filesystem writes
+because FAT repeatedly updates the allocation tables in the low numbered
+sectors. If `littlefs` is used I would expect the endurance to be substantially
+better owing to its wear levelling architecture.
+
+## 1.3 Supported chips
+
+These currently include Microchip EEPROM chips and
+[this Adafruit FRAM board](http://www.adafruit.com/product/1895). Note that the
+largest EEPROM chip uses SPI: see [below](./README.md#2-choice-of-interface)
+for a discussion of the merits and drawbacks of each interface.
+
+Supported devices. Microchip manufacture each chip in different variants with
+letters denoted by "xx" below. The variants cover parameters such as minimum
+Vcc value and do not affect the API.
+
+In the table below the Interface column includes page size in bytes.
+| Manufacurer | Part     | Interface | Bytes  | Technology | Docs   |
+|:-----------:|:--------:|:---------:|:------:|:----------:|:------:|
+| Microchip   | 25xx1024 | SPI 256   | 128KiB |   EEPROM   | [SPI.md](./spi/SPI.md) |
+| Microchip   | 24xx512  | I2C 128   |  64KiB |   EEPROM   | [I2C.md](./i2c/I2C.md) |
+| Microchip   | 24xx256  | I2C 128   |  32KiB |   EEPROM   | [I2C.md](./i2c/I2C.md) |
+| Microchip   | 24xx128  | I2C 128   |  16KiB |   EEPROM   | [I2C.md](./i2c/I2C.md) |
+| Microchip   | 24xx64   | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./i2c/I2C.md) |
+| Adafruit    | 1895     | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md) |
+
+## 1.4 Performance
+
+FRAM is truly byte-addressable: its speed is limited only by the speed of the
+I2C interface.
 
 Reading from EEPROM chips is fast. Writing is slower, typically around 5ms.
 However where multiple bytes are written, that 5ms applies to a page of data so
 the mean time per byte is quicker by a factor of the page size (128 or 256
 bytes depending on the device).
 
-The drivers support creating multi-chip arrays. In the case of I2C chips, up to
-eight devices may share the bus. In the case of SPI expansion has no absolute
-limit as each chip has its own chip select line.
+The drivers provide the benefit of page writing in a way which is transparent.
+If you write a block of data to an arbitrary address, page writes will be used
+to minimise total time.
 
-Devices or arrays of devices may be mounted as a filesystem or may be treated
-as an array of bytes.
-
-For I2C devices see [I2C.md](./i2c/I2C.md). For SPI see [SPI.md](./spi/SPI.md).
-
-# Choice of interface
+# 2. Choice of interface
 
 The principal merit of I2C is to minimise pin count. It uses two pins
 regardless of the number of chips connected. It requires pullup resistors on
@@ -41,3 +85,14 @@ electrical limits may also apply).
 
 In the case of the Microchip devices supported, the SPI chip is larger at
 128KiB compared to a maximum of 64KiB in the I2C range.
+
+# 3. Design details
+
+The fact that the API enables accessing blocks of data at arbitrary addresses
+implies that the handling of page addressing is done in the driver. This
+contrasts with drivers intended only for filesystem access. These devolve the
+detail of page addressing to the filesystem by specifying the correct page size
+in the ioctl and (if necessary) implementing a block erase method.
+
+The nature of the drivers in this repo implies that the block address in the
+ioctl is arbitrary.

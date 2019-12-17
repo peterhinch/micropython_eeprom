@@ -7,7 +7,7 @@ import time
 from micropython import const
 from bdevice import BlockDevice
 
-ADDR = const(0x50)  # Base address of chip
+_ADDR = const(0x50)  # Base address of chip
 
 T24C512 = const(65536)  # 64KiB 512Kbits
 T24C256 = const(32768)  # 32KiB 256Kbits
@@ -18,12 +18,12 @@ T24C64 = const(8192)  # 8KiB 64Kbits
 # same size, and must have contiguous addresses starting from 0x50.
 class EEPROM(BlockDevice):
 
-    def __init__(self, i2c, chip_size=T24C512, verbose=True):
+    def __init__(self, i2c, chip_size=T24C512, verbose=True, block_size=9):
         self._i2c = i2c
         if chip_size not in (T24C64, T24C128, T24C256, T24C512):
             raise RuntimeError('Invalid chip size', chip_size)
         nchips = self.scan(verbose, chip_size)  # No. of EEPROM chips
-        super().__init__(9, nchips, chip_size)
+        super().__init__(block_size, nchips, chip_size)
         self._i2c_addr = 0  # I2C address of current chip
         self._buf1 = bytearray(1)
         self._addrbuf = bytearray(2)  # Memory offset into current chip
@@ -31,11 +31,11 @@ class EEPROM(BlockDevice):
     # Check for a valid hardware configuration
     def scan(self, verbose, chip_size):
         devices = self._i2c.scan()  # All devices on I2C bus
-        eeproms = [d for d in devices if ADDR <= d < ADDR + 8]  # EEPROM chips
+        eeproms = [d for d in devices if _ADDR <= d < _ADDR + 8]  # EEPROM chips
         nchips = len(eeproms)
         if nchips == 0:
             raise RuntimeError('EEPROM not found.')
-        if min(eeproms) != ADDR or (max(eeproms) - ADDR + 1) > nchips:
+        if min(eeproms) != _ADDR or (max(eeproms) - _ADDR) >= nchips:
             raise RuntimeError('Non-contiguous chip addresses', eeproms)
         if verbose:
             s = '{} chips detected. Total EEPROM size {}bytes.'
@@ -55,14 +55,7 @@ class EEPROM(BlockDevice):
 
     def __setitem__(self, addr, value):
         if isinstance(addr, slice):
-            start, stop = self.do_slice(addr)
-            try:
-                if len(value) == (stop - start):
-                    return self.readwrite(start, value, False)
-                else:
-                    raise RuntimeError('Slice must have same length as data')
-            except TypeError:
-                raise RuntimeError('Can only assign bytes/bytearray to a slice')
+            return self.wslice(addr, value)
         self._buf1[0] = value
         self._getaddr(addr, 1)
         self._i2c.writevto(self._i2c_addr, (self._addrbuf, self._buf1))
@@ -70,9 +63,7 @@ class EEPROM(BlockDevice):
 
     def __getitem__(self, addr):
         if isinstance(addr, slice):
-            start, stop = self.do_slice(addr)
-            buf = bytearray(stop - start)
-            return self.readwrite(start, buf, True)
+            return self.rslice(addr)
         self._getaddr(addr, 1)
         self._i2c.writeto(self._i2c_addr, self._addrbuf)
         self._i2c.readfrom_into(self._i2c_addr, self._buf1)
@@ -86,7 +77,7 @@ class EEPROM(BlockDevice):
         ca, la = divmod(addr, self._c_bytes)  # ca == chip no, la == offset into chip
         self._addrbuf[0] = (la >> 8) & 0xff
         self._addrbuf[1] = la & 0xff
-        self._i2c_addr = ADDR + ca
+        self._i2c_addr = _ADDR + ca
         pe = (addr & ~0x7f) + 0x80  # byte 0 of next page
         return min(nbytes, pe - la)
 
@@ -94,7 +85,7 @@ class EEPROM(BlockDevice):
     def readwrite(self, addr, buf, read):
         nbytes = len(buf)
         mvb = memoryview(buf)
-        start = 0
+        start = 0  # Offset into buf.
         while nbytes > 0:
             npage = self._getaddr(addr, nbytes)  # No. of bytes in current page
             assert npage > 0

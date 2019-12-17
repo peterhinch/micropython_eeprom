@@ -23,9 +23,9 @@ _CE = const(0xc7)  # Chip erase
 # Logical EEPROM device comprising one or more physical chips sharing an SPI bus.
 class EEPROM(BlockDevice):
 
-    def __init__(self, spi, cspins, verbose=True):
+    def __init__(self, spi, cspins, verbose=True, block_size=9):
         # args: virtual block size in bits, no. of chips, bytes in each chip
-        super().__init__(9, len(cspins), _SIZE)
+        super().__init__(block_size, len(cspins), _SIZE)
         self._spi = spi
         self._cspins = cspins
         self._ccs = None  # Chip select Pin object for current chip
@@ -74,15 +74,8 @@ class EEPROM(BlockDevice):
             time.sleep_ms(1)
 
     def __setitem__(self, addr, value):
-        if isinstance(addr, slice):  # value is a buffer
-            start, stop = self.do_slice(addr)
-            try:
-                if len(value) == (stop - start):
-                    return self.readwrite(start, value, False)
-                else:
-                    raise RuntimeError('Slice must have same length as data')
-            except TypeError:
-                raise RuntimeError('Can only assign bytes/bytearray to a slice')
+        if isinstance(addr, slice):
+            return self.wslice(addr, value)
         mvp = self._mvp
         mvp[0] = _WREN
         self._getaddr(addr, 1)  # Sets mv[1:4], updates ._ccs
@@ -99,9 +92,7 @@ class EEPROM(BlockDevice):
 
     def __getitem__(self, addr):
         if isinstance(addr, slice):
-            start, stop = self.do_slice(addr)
-            buf = bytearray(stop - start)
-            return self.readwrite(start, buf, True)
+            return self.rslice(addr)
         mvp = self._mvp
         mvp[0] = _READ
         self._getaddr(addr, 1)
@@ -130,7 +121,7 @@ class EEPROM(BlockDevice):
         nbytes = len(buf)
         mvb = memoryview(buf)
         mvp = self._mvp
-        start = 0
+        start = 0  # Offset into buf.
         while nbytes > 0:
             npage = self._getaddr(addr, nbytes)  # No. of bytes in current page
             cs = self._ccs

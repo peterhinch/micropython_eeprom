@@ -23,7 +23,7 @@ class BlockDevice:
         return self._a_bytes
 
     # Handle special cases of a slice. Always return a pair of positive indices.
-    def do_slice(self, addr):
+    def _do_slice(self, addr):
         if not (addr.step is None or addr.step == 1):
             raise NotImplementedError('only slices with step=1 (aka None) are supported')
         start = addr.start if addr.start is not None else 0
@@ -31,6 +31,22 @@ class BlockDevice:
         start = start if start >= 0 else self._a_bytes + start
         stop = stop if stop >= 0 else self._a_bytes + stop
         return start, stop
+
+    def wslice(self, addr, value):
+        start, stop = self._do_slice(addr)
+        try:
+            if len(value) == (stop - start):
+                res = self.readwrite(start, value, False)
+            else:
+                raise RuntimeError('Slice must have same length as data')
+        except TypeError:
+            raise RuntimeError('Can only assign bytes/bytearray to a slice')
+        return res
+
+    def rslice(self, addr):
+        start, stop = self._do_slice(addr)
+        buf = bytearray(stop - start)
+        return self.readwrite(start, buf, True)
 
     # IOCTL protocol.
     def readblocks(self, blocknum, buf, offset=0):

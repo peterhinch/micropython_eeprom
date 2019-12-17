@@ -58,14 +58,14 @@ In the table below the Interface column includes page size in bytes.
 
 
 
-| Manufacturer | Part     | Interface | Bytes  | Technology | Docs    |
-|:------------:|:--------:|:---------:|:------:|:----------:|:-------:|
-| Microchip    | 25xx1024 | SPI 256   | 128KiB |   EEPROM   | SPI.md  |
-| Microchip    | 24xx512  | I2C 128   |  64KiB |   EEPROM   | I2C.md  |
-| Microchip    | 24xx256  | I2C 128   |  32KiB |   EEPROM   | I2C.md  |
-| Microchip    | 24xx128  | I2C 128   |  16KiB |   EEPROM   | I2C.md  |
-| Microchip    | 24xx64   | I2C 128   |   8KiB |   EEPROM   | I2C.md  |
-| Adafruit     | 1895     | I2C n/a   |  32KiB |   FRAM     | FRAM.md |
+| Manufacturer | Part     | Interface | Bytes  | Technology | Docs      |
+|:------------:|:--------:|:---------:|:------:|:----------:|:---------:|
+| Microchip    | 25xx1024 | SPI 256   | 128KiB |   EEPROM   | [SPI.md]  |
+| Microchip    | 24xx512  | I2C 128   |  64KiB |   EEPROM   | [I2C.md]  |
+| Microchip    | 24xx256  | I2C 128   |  32KiB |   EEPROM   | [I2C.md]  |
+| Microchip    | 24xx128  | I2C 128   |  16KiB |   EEPROM   | [I2C.md]  |
+| Microchip    | 24xx64   | I2C 128   |   8KiB |   EEPROM   | [I2C.md]  |
+| Adafruit     | 1895     | I2C n/a   |  32KiB |   FRAM     | [FRAM.md] |
 
 Documentation:  
 [SPI.md](./spi/SPI.md)  

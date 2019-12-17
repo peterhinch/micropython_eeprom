@@ -25,12 +25,12 @@ as below. Pin numbers assume a PDIP package (8 pin plastic dual-in-line).
 |:-------:|:---:|:------:|
 | 1 CS    | Y5  | SS/    |
 | 2 SO    | Y7  | MISO   |
-| 3 WP/   | 3V3 |        |
-| 4 Vss   | Gnd |        |
+| 3 WP/   | 3V3 | 3V3    |
+| 4 Vss   | Gnd | Gnd    |
 | 5 SI    | Y8  | MOSI   |
 | 6 SCK   | Y6  | SCK    |
-| 7 HOLD/ | 3V3 |        |
-| 8 Vcc   | 3V3 |        |
+| 7 HOLD/ | 3V3 | 3V3    |
+| 8 Vcc   | 3V3 | 3V3    |
 
 For multiple chips a separate CS pin must be assigned to each chip: each one
 must be wired to a single chip's CS line. Multiple chips should have 3V3, Gnd,

@@ -18,9 +18,21 @@ class BlockDevice:
         self._a_bytes = chip_size * nchips  # Size of array
         self._nbits = nbits  # Block size in bits
         self._block_size = 2**nbits
+        self._rwbuf = bytearray(1)
 
     def __len__(self):
         return self._a_bytes
+
+    def __setitem__(self, addr, value):
+        if isinstance(addr, slice):
+            return self._wslice(addr, value)
+        self._rwbuf[0] = value
+        self.readwrite(addr, self._rwbuf, False)
+
+    def __getitem__(self, addr):
+        if isinstance(addr, slice):
+            return self._rslice(addr)
+        return self.readwrite(addr, self._rwbuf, True)[0]
 
     # Handle special cases of a slice. Always return a pair of positive indices.
     def _do_slice(self, addr):
@@ -32,7 +44,7 @@ class BlockDevice:
         stop = stop if stop >= 0 else self._a_bytes + stop
         return start, stop
 
-    def wslice(self, addr, value):
+    def _wslice(self, addr, value):
         start, stop = self._do_slice(addr)
         try:
             if len(value) == (stop - start):
@@ -43,7 +55,7 @@ class BlockDevice:
             raise RuntimeError('Can only assign bytes/bytearray to a slice')
         return res
 
-    def rslice(self, addr):
+    def _rslice(self, addr):
         start, stop = self._do_slice(addr)
         buf = bytearray(stop - start)
         return self.readwrite(start, buf, True)

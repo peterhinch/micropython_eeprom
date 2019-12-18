@@ -29,7 +29,7 @@ The drivers have the following common features:
 Currently supported technologies are EEPROM and FRAM (ferroelectric RAM). These
 are nonvolatile random access storage devices with much higher endurance than
 flash memory. Flash has a typical endurance of 10K writes per page. The figures
-for EEPROM and FRAM are 1M and 10^12 writes respectively. In the case of the
+for EEPROM and FRAM are 1-4M and 10^12 writes respectively. In the case of the
 FAT filing system 1M page writes probably corresponds to 1M filesystem writes
 because FAT repeatedly updates the allocation tables in the low numbered
 sectors. If `littlefs` is used I would expect the endurance to be substantially
@@ -37,25 +37,27 @@ better owing to its wear levelling architecture.
 
 ## 1.3 Supported chips
 
-These currently include Microchip EEPROM chips and
+These currently include Microchip and STM EEPROM chips and
 [this Adafruit FRAM board](http://www.adafruit.com/product/1895). Note that the
 largest EEPROM chip uses SPI: see [below](./README.md#2-choice-of-interface)
 for a discussion of the merits and drawbacks of each interface.
 
 Supported devices. Microchip manufacture each chip in different variants with
 letters denoted by "xx" below. The variants cover parameters such as minimum
-Vcc value and do not affect the API.
+Vcc value and do not affect the API. There are two variants of the STM chip,
+M95M02-DRMN6TP and M95M02-DWMN3TP/K. The latter has a wider temperature range.
 
 In the table below the Interface column includes page size in bytes.  
 
-| Manufacturer | Part     | Interface | Bytes  | Technology | Docs                      |
-|:------------:|:--------:|:---------:|:------:|:----------:|:-------------------------:|
-| Microchip    | 25xx1024 | SPI 256   | 128KiB |   EEPROM   | [SPI.md](./spi/SPI.md)    |
-| Microchip    | 24xx512  | I2C 128   |  64KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
-| Microchip    | 24xx256  | I2C 128   |  32KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
-| Microchip    | 24xx128  | I2C 128   |  16KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
-| Microchip    | 24xx64   | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
-| Adafruit     | 1895     | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md) |
+| Manufacturer | Part      | Interface | Bytes  | Technology | Docs                      |
+|:------------:|:---------:|:---------:|:------:|:----------:|:-------------------------:|
+| STM          | M95M02-DR | SPI 256   | 256KiB |   EEPROM   | [SPI.md](./spi/SPI.md)    |
+| Microchip    | 25xx1024  | SPI 256   | 128KiB |   EEPROM   | [SPI.md](./spi/SPI.md)    |
+| Microchip    | 24xx512   | I2C 128   |  64KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
+| Microchip    | 24xx256   | I2C 128   |  32KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
+| Microchip    | 24xx128   | I2C 128   |  16KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
+| Microchip    | 24xx64    | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
+| Adafruit     | 1895      | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md) |
 
 Documentation:  
 [SPI.md](./spi/SPI.md)  
@@ -92,7 +94,7 @@ electrical limits may also apply).
 In the case of the Microchip devices supported, the SPI chip is larger at
 128KiB compared to a maximum of 64KiB in the I2C range.
 
-# 3. Design details
+# 3. Design details and test results
 
 The fact that the API enables accessing blocks of data at arbitrary addresses
 implies that the handling of page addressing is done in the driver. This
@@ -100,5 +102,10 @@ contrasts with drivers intended only for filesystem access. These devolve the
 detail of page addressing to the filesystem by specifying the correct page size
 in the ioctl and (if necessary) implementing a block erase method.
 
-The nature of the drivers in this repo implies that the block address in the
-ioctl is arbitrary.
+The nature of the drivers in this repo implies that the page size in the ioctl
+is arbitrary. Littlefs requires a minimum size of 128 bytes - 
+[theoretically 104](https://github.com/ARMmbed/littlefs/blob/master/DESIGN.md)
+but the driver only allows powers of 2. Testing was done with 512 bytes.
+
+Currently I have not had success with littlefs but it hasn't yet officially
+been released. The test programs therefore use FAT.

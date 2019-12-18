@@ -10,10 +10,13 @@ from eeprom_spi import EEPROM
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
 
 # Return an EEPROM array. Adapt for platforms other than Pyboard.
-def get_eep():
+def get_eep(stm):
     if uos.uname().machine.split(' ')[0][:4] == 'PYBD':
         Pin.board.EN_3V3.value(1)
-    eep = EEPROM(SPI(2, baudrate=20_000_000), cspins)
+    if stm:
+        eep = EEPROM(SPI(2, baudrate=5_000_000), cspins, 256)
+    else:
+        eep = EEPROM(SPI(2, baudrate=20_000_000), cspins)
     print('Instantiated EEPROM')
     return eep
 
@@ -56,8 +59,8 @@ def _testblock(eep, bs):
     if res != d2:
         return 'Block test fail 3:' + res
 
-def test():
-    eep = get_eep()
+def test(stm=False):
+    eep = get_eep(stm)
     sa = 1000
     for v in range(256):
         eep[sa + v] = v
@@ -92,8 +95,8 @@ def test():
         print('Test chip boundary skipped: only one chip!')
 
 # ***** TEST OF FILESYSTEM MOUNT *****
-def fstest(format=False):
-    eep = get_eep()
+def fstest(format=False, stm=False):
+    eep = get_eep(stm)
     if format:
         uos.VfsFat.mkfs(eep)
     vfs=uos.VfsFat(eep)
@@ -105,8 +108,8 @@ def fstest(format=False):
     print('Contents of "/eeprom": {}'.format(uos.listdir('/eeprom')))
     print(uos.statvfs('/eeprom'))
 
-def cptest():
-    eep = get_eep()
+def cptest(stm=False):
+    eep = get_eep(stm)
     if 'eeprom' in uos.listdir('/'):
         print('Device already mounted.')
     else:
@@ -124,8 +127,8 @@ def cptest():
 
 
 # ***** TEST OF HARDWARE *****
-def full_test():
-    eep = get_eep()
+def full_test(stm=False):
+    eep = get_eep(stm)
     page = 0
     for sa in range(0, len(eep), 256):
         data = uos.urandom(256)

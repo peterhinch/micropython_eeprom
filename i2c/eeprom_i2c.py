@@ -53,22 +53,6 @@ class EEPROM(BlockDevice):
             finally:
                 time.sleep_ms(1)
 
-    def __setitem__(self, addr, value):
-        if isinstance(addr, slice):
-            return self.wslice(addr, value)
-        self._buf1[0] = value
-        self._getaddr(addr, 1)
-        self._i2c.writevto(self._i2c_addr, (self._addrbuf, self._buf1))
-        self._wait_rdy()  # Wait for write to complete
-
-    def __getitem__(self, addr):
-        if isinstance(addr, slice):
-            return self.rslice(addr)
-        self._getaddr(addr, 1)
-        self._i2c.writeto(self._i2c_addr, self._addrbuf)
-        self._i2c.readfrom_into(self._i2c_addr, self._buf1)
-        return self._buf1[0]
-
     # Given an address, set ._i2c_addr and ._addrbuf and return the number of
     # bytes that can be processed in the current page
     def _getaddr(self, addr, nbytes):  # Set up _addrbuf and _i2c_addr

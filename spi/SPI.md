@@ -1,6 +1,9 @@
 # 1. A MicroPython SPI EEPROM driver
 
-This driver supports the Microchip 25xx1024 series of 128KiB SPI EEPROMs.
+This driver supports the Microchip 25xx1024 series of 128KiB SPI EEPROMs and
+the STM M95M02-DR 256KiB device. These have 1M and 4M cycles of write endurance
+respectively (compared to 10K for Pyboard Flash memory).
+
 Multiple chips may be used to construct a single logical nonvolatile memory
 module. The driver allows the memory either to be mounted in the target
 filesystem as a disk device or to be addressed as an array of bytes.
@@ -13,13 +16,23 @@ The driver has the following attributes:
  5. The SPI bus can be shared with other chips.
  6. It supports filesystem mounting.
  7. Alternatively it can support byte-level access using Python slice syntax.
- 8. RAM allocations are minimised.
+ 8. RAM allocations are minimised. Buffer sizes are tiny.
+
+## 1.1 This document
+
+Code samples assume one or more Microchip devices. If using the STM chip the
+SPI baudrate should be 5MHz and the chip size must be specified to the `EEPROM`
+constructor, e.g.:
+```python
+eep = EEPROM(SPI(2, baudrate=5_000_000), cspins, 256)
+```
 
 # 2. Connections
 
 Any SPI interface may be used. The table below assumes a Pyboard running SPI(2)
 as per the test program. To wire up a single EEPROM chip, connect to a Pyboard
-as below. Pin numbers assume a PDIP package (8 pin plastic dual-in-line).
+as below. Pin numbers assume a PDIP package (8 pin plastic dual-in-line) for
+the Microchip device and 8 pin SOIC for the STM chip.
 
 | EEPROM  | Signal |  PB | Signal |
 |:-------:|:------:|:---:|:------:|
@@ -34,8 +47,7 @@ as below. Pin numbers assume a PDIP package (8 pin plastic dual-in-line).
 
 For multiple chips a separate CS pin must be assigned to each chip: each one
 must be wired to a single chip's CS line. Multiple chips should have 3V3, Gnd,
-SCL, MOSI and MISO lines wired in parallel. The SPI bus is fast: wiring should
-be short and direct.
+SCL, MOSI and MISO lines wired in parallel.
 
 If you use a Pyboard D and power the EEPROMs from the 3V3 output you will need
 to enable the voltage rail by issuing:
@@ -43,6 +55,14 @@ to enable the voltage rail by issuing:
 machine.Pin.board.EN_3V3.value(1)
 ```
 Other platforms may vary.
+
+## 2.1 SPI Bus
+
+The Microchip devices support baudrates up to 20MHz. The STM chip has a maximum
+of 5MHz. Both support the default SPI mode: simply specify the baudrate to the
+constructor.
+
+The SPI bus is fast: wiring should be short and direct.
 
 # 3. Files
 
@@ -56,7 +76,7 @@ Installation: copy files 1 and 2 (optionally 3) to the target filesystem.
 
 The driver supports mounting the EEPROM chips as a filesystem. Initially the
 device will be unformatted so it is necessary to issue code along these lines to
-format the device. Code assumes two devices:
+format the device. Code assumes two Microchip devices:
 
 ```python
 import uos
@@ -94,9 +114,10 @@ Arguments:
  1. `spi` Mandatory. An initialised SPI bus created by `machine`.
  2. `cspins` A list or tuple of `Pin` instances. Each `Pin` must be initialised
  as an output (`Pin.OUT`) and with `value=1` and be created by `machine`.
- 3. `verbose=True` If `True`, the constructor issues information on the EEPROM
+ 3. `size=128` Chip size in KiB. Set to 256 for the STM chip.
+ 4. `verbose=True` If `True`, the constructor issues information on the EEPROM
  devices it has detected.
- 4. `block_size=9` The block size reported to the filesystem. The size in bytes
+ 5. `block_size=9` The block size reported to the filesystem. The size in bytes
  is `2**block_size` so is 512 bytes by default.
 
 SPI baudrate: The 25LC1024 supports baudrates of upto 20MHz. If this value is
@@ -108,7 +129,8 @@ exceeding this figure.
 It is possible to read and write individual bytes or arrays of arbitrary size.
 Larger arrays are faster, especially when writing: the driver uses the chip's
 hardware page access where possible. Writing a page (256 bytes) takes the same
-time (~5ms) as writing a single byte.
+time as writing a single byte. This is 6ms max on the Microchip and 10ms max on
+the STM.
 
 The examples below assume two devices, one with `CS` connected to Pyboard pin
 Y4 and the other with `CS` connected to Y5.
@@ -171,7 +193,7 @@ identify the chip.
 
 #### erase
 
-Erases the entire array.
+Erases the entire array. Available only on the Microchip device.
 
 ### 4.1.4 Methods providing the block protocol
 
@@ -216,28 +238,29 @@ possible to use JSON/pickle to store objects in a filesystem.
 
 # 5. Test program eep_spi.py
 
-This assumes a Pyboard 1.x or Pyboard D with EEPROM(s) wired as above. It
-provides the following.
+This assumes a Pyboard 1.x or Pyboard D with two EEPROMs wired to SPI(2) as
+above with chip selects connected to pins `Y4` and `Y5`. It provides the
+following. In all cases the stm arg should be `True` if using the STM chips.
 
-## 5.1 test()
+## 5.1 test(stm=False)
 
 This performs a basic test of single and multi-byte access to chip 0. The test
 reports how many chips can be accessed. Existing array data will be lost. This
 primarily tests the driver: as a hardware test it is not exhaustive.
 
-## 5.2 full_test()
+## 5.2 full_test(stm=False)
 
 This is a hardware test. Tests the entire array. Fills each 256 byte page with
 random data, reads it back, and checks the outcome. Existing array data will be
 lost.
 
-## 5.3 fstest(format=False)
+## 5.3 fstest(format=False, stm=False)
 
 If `True` is passed, formats the EEPROM array as a FAT filesystem and mounts
 the device on `/eeprom`. If no arg is passed it mounts the array and lists the
 contents. It also prints the outcome of `uos.statvfs` on the array.
 
-## 5.4 cptest()
+## 5.4 cptest(stm=False)
 
 Tests copying the source files to the filesystem. The test will fail if the
 filesystem was not formatted. Lists the contents of the mountpoint and prints

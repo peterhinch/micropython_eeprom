@@ -1,5 +1,6 @@
-# eeprom_spi.py MicroPython driver for Microchip SPI EEPROM devices,
-# currently only 25xx1024.
+# eeprom_spi.py MicroPython driver for Microchip 128KiB SPI EEPROM device,
+# also STM 256KiB chip
+# TODO the latter not yet tested.
 
 # Released under the MIT License (MIT). See LICENSE.
 # Copyright (c) 2019 Peter Hinch
@@ -8,24 +9,29 @@ import time
 from micropython import const
 from bdevice import BlockDevice
 
-_SIZE = const(131072)  # Chip size 128KiB
 # Supported instruction set
 _READ = const(3)
 _WRITE = const(2)
 _WREN = const(6)  # Write enable
 _RDSR = const(5)  # Read status register
 _RDID = const(0xab)  # Read chip ID
-_CE = const(0xc7)  # Chip erase
+_CE = const(0xc7)  # Chip erase (Microchip only)
 # Not implemented: Write disable and Write status register
 # _WRDI = const(4)
 # _WRSR = const(1)
+#_RDID_STM = const(0x83)  # STM only read ID page
+#_WRID_STM = const(0x82)
+#_STM_ID = const(0x30)  # Arbitrary ID for STM chip
 
 # Logical EEPROM device comprising one or more physical chips sharing an SPI bus.
 class EEPROM(BlockDevice):
 
-    def __init__(self, spi, cspins, verbose=True, block_size=9):
+    def __init__(self, spi, cspins, size=128, verbose=True, block_size=9):
         # args: virtual block size in bits, no. of chips, bytes in each chip
-        super().__init__(block_size, len(cspins), _SIZE)
+        if size not in (128, 256):
+            raise ValueError('Valid sizes are 128 or 256')
+        super().__init__(block_size, len(cspins), size * 1024)
+        self._stm = size == 256
         self._spi = spi
         self._cspins = cspins
         self._ccs = None  # Chip select Pin object for current chip
@@ -33,22 +39,62 @@ class EEPROM(BlockDevice):
         self._mvp = memoryview(self._bufp)  # cost-free slicing
         self.scan(verbose)
 
-    # Check for a valid hardware configuration
-    def scan(self, verbose):
+# STM Datasheet too vague about the ID block. Do we need _WREN? Do we need to poll ready?
+    #def _stm_rdid(self):
+        #mvp = self._mvp
+        #mvp[:] = b'\0\0\0\0\0'
+        #mvp[0] = _RDID_STM
+        #cs(0)
+        #self._spi.write_readinto(mvp, mvp)
+        #cs(1)
+        #return mvp[4]
+
+    #def _stm_wrid(self):
+        #mvp = self._mvp
+        #mvp[:] = b'\0\0\0\0\0'
+        #mvp[0] = _WRID_STM
+        #mvp[5] = _STM_ID
+        #cs(0)
+        #self._spi.write(mvp)
+        #cs(1)
+
+    # Check for a valid hardware configuration: just see if we can write to offset 0
+    # Tested (on Microchip), but probably better to use ID block
+    def _stm_scan(self):
+        for n in range(len(self._cspins)):
+            ta = n * self._c_bytes
+            v = self[ta]
+            vx = v^0xff
+            self[ta] = vx
+            if self[ta] == vx:  # Wrote OK, put back
+                self[ta] = v
+            else:
+                raise RuntimeError('EEPROM not found at cs[{}].'.format(n))
+        return n
+
+    # Scan for Microchip devices: read manf ID
+    def _mc_scan(self):
         mvp = self._mvp
         for n, cs in enumerate(self._cspins):
             mvp[:] = b'\0\0\0\0\0'
             mvp[0] = _RDID
             cs(0)
-            self._spi.write_readinto(mvp[:5], mvp[:5])
+            self._spi.write_readinto(mvp, mvp)
             cs(1)
             if mvp[4] != 0x29:
                 raise RuntimeError('EEPROM not found at cs[{}].'.format(n))
+        return n
+
+    # Check for a valid hardware configuration
+    def scan(self, verbose):
+        n = self._stm_scan() if self._stm else self._mc_scan()
         if verbose:
             s = '{} chips detected. Total EEPROM size {}bytes.'
             print(s.format(n + 1, self._a_bytes))
 
     def erase(self):
+        if self._stm:
+            raise RuntimeError('Erase not available on STM chip')
         mvp = self._mvp
         for cs in self._cspins:  # For each chip
             mvp[0] = _WREN
@@ -72,35 +118,6 @@ class EEPROM(BlockDevice):
             if not mvp[1]:  # We never set BP0 or BP1 so ready state is 0.
                 break
             time.sleep_ms(1)
-
-    def __setitem__(self, addr, value):
-        if isinstance(addr, slice):
-            return self.wslice(addr, value)
-        mvp = self._mvp
-        mvp[0] = _WREN
-        self._getaddr(addr, 1)  # Sets mv[1:4], updates ._ccs
-        cs = self._ccs  # Retrieve current cs pin
-        cs(0)
-        self._spi.write(mvp[:1])
-        cs(1)
-        mvp[0] = _WRITE
-        mvp[4] = value
-        cs(0)
-        self._spi.write(mvp[:5])
-        cs(1)  # Trigger write
-        self._wait_rdy()  # Wait for write to complete
-
-    def __getitem__(self, addr):
-        if isinstance(addr, slice):
-            return self.rslice(addr)
-        mvp = self._mvp
-        mvp[0] = _READ
-        self._getaddr(addr, 1)
-        cs = self._ccs
-        cs(0)
-        self._spi.write_readinto(mvp[:5], mvp[:5])
-        cs(1)
-        return mvp[4]
 
     # Given an address, set current chip select and address buffer.
     # Return the number of bytes that can be processed in the current page.

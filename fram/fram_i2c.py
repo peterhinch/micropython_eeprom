@@ -47,21 +47,6 @@ class FRAM(BlockDevice):
         productID = ((res[1] & 0x0F) << 8) + res[2]
         return manufacturerID == _MANF_ID and productID == _PRODUCT_ID
 
-    def __setitem__(self, addr, value):
-        if isinstance(addr, slice):
-            return self.wslice(addr, value)
-        self._buf1[0] = value
-        self._getaddr(addr, 1)
-        self._i2c.writevto(self._i2c_addr, (self._addrbuf, self._buf1))
-
-    def __getitem__(self, addr):
-        if isinstance(addr, slice):
-            return self.rslice(addr)
-        self._getaddr(addr, 1)
-        self._i2c.writeto(self._i2c_addr, self._addrbuf)
-        self._i2c.readfrom_into(self._i2c_addr, self._buf1)
-        return self._buf1[0]
-
     # In the context of FRAM a page == a chip.
     # Args: an address and a no. of bytes. Set ._i2c_addr to correct chip.
     # Return the no. of bytes available to access on that chip.

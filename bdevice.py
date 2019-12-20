@@ -62,13 +62,13 @@ class BlockDevice:
 
     # IOCTL protocol.
     def readblocks(self, blocknum, buf, offset=0):
-        return self.readwrite(offset + (blocknum << self._nbits), buf, True)
+        self.readwrite(offset + (blocknum << self._nbits), buf, True)
 
-    def writeblocks(self, blocknum, buf, offset=0):
+    def writeblocks(self, blocknum, buf, offset=None):
+        offset = 0 if offset is None else offset
         self.readwrite(offset + (blocknum << self._nbits), buf, False)
 
     def ioctl(self, op, arg):
-        #print("ioctl(%d, %r)" % (op, arg))
         if op == 4:  # BP_IOCTL_SEC_COUNT
             return self._a_bytes >> self._nbits
         if op == 5:  # BP_IOCTL_SEC_SIZE

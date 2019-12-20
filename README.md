@@ -1,6 +1,6 @@
 # 1. MicroPython drivers for nonvolatile memory
 
-These drivers support nonvolatile memory chips.
+These drivers support nonvolatile memory chips and the littlefs filesystem.
 
 Currently supported devices use technologies having superior performance
 compared to flash. Resultant storage has much higher write endurance. In some
@@ -18,7 +18,7 @@ The drivers have the following common features:
  a `readwrite` method.
  3. Alternatively the array can be formatted and mounted as a filesystem using
  methods in the `uos` module. Any filesystem supported by the MicroPython build
- may be employed.
+ may be employed: FAT and littlefs have been tested. The latter is recommended.
  4. Drivers are portable: buses and pins should be instantiated using the
  `machine` module.
  5. Buses may be shared with other hardware. This assumes that the application
@@ -58,6 +58,8 @@ In the table below the Interface column includes page size in bytes.
 | Microchip    | 24xx128   | I2C 128   |  16KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
 | Microchip    | 24xx64    | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
 | Adafruit     | 1895      | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md) |
+
+**STM chip support under development**
 
 Documentation:  
 [SPI.md](./spi/SPI.md)  
@@ -104,8 +106,8 @@ in the ioctl and (if necessary) implementing a block erase method.
 
 The nature of the drivers in this repo implies that the page size in the ioctl
 is arbitrary. Littlefs requires a minimum size of 128 bytes - 
-[theoretically 104](https://github.com/ARMmbed/littlefs/blob/master/DESIGN.md)
-but the driver only allows powers of 2. Testing was done with 512 bytes.
+[theoretically 104](https://github.com/ARMmbed/littlefs/blob/master/DESIGN.md).
+The driver only allows powers of 2. Testing was done with 512 bytes.
 
-Currently I have not had success with littlefs but it hasn't yet officially
-been released. The test programs therefore use FAT.
+The test programs use littlefs and therefore require MicroPython V1.12 or
+later.

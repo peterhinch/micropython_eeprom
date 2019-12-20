@@ -163,4 +163,3 @@ class EEPROM(BlockDevice):
             nbytes -= npage
             start += npage
             addr += npage
-        return buf

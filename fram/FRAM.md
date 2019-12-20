@@ -79,16 +79,17 @@ Installation: copy files 1 and 2 (optionally 3) to the target filesystem.
 
 The driver supports mounting the FRAM chips as a filesystem. Initially the
 device will be unformatted so it is necessary to issue code along these lines
-to format the device. Code assumes one or more devices:
+to format the device. Code assumes one or more devices and also assumes the
+littlefs filesystem:
 
 ```python
-import uos
+import os
 from machine import I2C
 from fram_i2c import FRAM
 fram = FRAM(I2C(2))
-uos.VfsFat.mkfs(fram)  # Omit this to mount an existing filesystem
-vfs = uos.VfsFat(fram)
-uos.mount(vfs,'/fram')
+# Format the filesystem
+os.VfsLfs2.mkfs(fram)  # Omit this to mount an existing filesystem
+os.mount(fram,'/fram')
 ```
 The above will reformat a drive with an existing filesystem: to mount an
 existing filesystem simply omit the commented line.

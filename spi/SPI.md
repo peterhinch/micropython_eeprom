@@ -4,6 +4,8 @@ This driver supports the Microchip 25xx1024 series of 128KiB SPI EEPROMs and
 the STM M95M02-DR 256KiB device. These have 1M and 4M cycles of write endurance
 respectively (compared to 10K for Pyboard Flash memory).
 
+**NOTE: STM chip not yet tested**
+
 Multiple chips may be used to construct a single logical nonvolatile memory
 module. The driver allows the memory either to be mounted in the target
 filesystem as a disk device or to be addressed as an array of bytes.
@@ -75,18 +77,19 @@ Installation: copy files 1 and 2 (optionally 3) to the target filesystem.
 # 4. The device driver
 
 The driver supports mounting the EEPROM chips as a filesystem. Initially the
-device will be unformatted so it is necessary to issue code along these lines to
-format the device. Code assumes two Microchip devices:
+device will be unformatted so it is necessary to issue code along these lines
+to format the device. Code assumes two Microchip devices and also assumes the
+littlefs filesystem:
 
 ```python
-import uos
+import os
 from machine import SPI, Pin
 from eeprom_spi import EEPROM
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
 eep = EEPROM(SPI(2, baudrate=20_000_000), cspins)
-uos.VfsFat.mkfs(eep)  # Omit this to mount an existing filesystem
-vfs = uos.VfsFat(eep)
-uos.mount(vfs,'/eeprom')
+# Format the filesystem
+os.VfsLfs2.mkfs(eep)  # Omit this to mount an existing filesystem
+os.mount(eep,'/eeprom')
 ```
 The above will reformat a drive with an existing filesystem: to mount an
 existing filesystem simply omit the commented line.
@@ -122,7 +125,7 @@ Arguments:
 
 SPI baudrate: The 25LC1024 supports baudrates of upto 20MHz. If this value is
 specified the platform will produce the highest available frequency not
-exceeding this figure.
+exceeding this figure. Note that the STM chip has a maximum rate of 5MHz.
 
 ### 4.1.2 Methods providing byte level access
 

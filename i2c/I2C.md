@@ -77,17 +77,18 @@ Installation: copy files 1 and 2 (optionally 3) to the target filesystem.
 # 4. The device driver
 
 The driver supports mounting the EEPROM chips as a filesystem. Initially the
-device will be unformatted so it is necessary to issue code along these lines to
-format the device. Code assumes one or more 64KiB devices:
+device will be unformatted so it is necessary to issue code along these lines
+to format the device. Code assumes one or more 64KiB devices and also assumes
+the littlefs filesystem:
 
 ```python
-import uos
+import os
 from machine import I2C
 from eeprom_i2c import EEPROM, T24C512
 eep = EEPROM(I2C(2), T24C512)
-uos.VfsFat.mkfs(eep)  # Omit this to mount an existing filesystem
-vfs = uos.VfsFat(eep)
-uos.mount(vfs,'/eeprom')
+# Format the filesystem
+os.VfsLfs2.mkfs(eep)  # Omit this to mount an existing filesystem
+os.mount(eep,'/eeprom')
 ```
 The above will reformat a drive with an existing filesystem: to mount an
 existing filesystem simply omit the commented line.

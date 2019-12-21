@@ -4,8 +4,6 @@ This driver supports the Microchip 25xx1024 series of 128KiB SPI EEPROMs and
 the STM M95M02-DR 256KiB device. These have 1M and 4M cycles of write endurance
 respectively (compared to 10K for Pyboard Flash memory).
 
-**NOTE: STM chip not yet tested**
-
 Multiple chips may be used to construct a single logical nonvolatile memory
 module. The driver allows the memory either to be mounted in the target
 filesystem as a disk device or to be addressed as an array of bytes.

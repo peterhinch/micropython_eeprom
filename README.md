@@ -59,8 +59,6 @@ In the table below the Interface column includes page size in bytes.
 | Microchip    | 24xx64    | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
 | Adafruit     | 1895      | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md) |
 
-**STM chip support under development**
-
 Documentation:  
 [SPI.md](./spi/SPI.md)  
 [I2C.md](./i2c/I2C.md)  

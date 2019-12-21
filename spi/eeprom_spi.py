@@ -9,19 +9,21 @@ import time
 from micropython import const
 from bdevice import BlockDevice
 
-# Supported instruction set
+# Supported instruction set - common to both chips:
 _READ = const(3)
 _WRITE = const(2)
 _WREN = const(6)  # Write enable
 _RDSR = const(5)  # Read status register
+# Microchip only:
 _RDID = const(0xab)  # Read chip ID
-_CE = const(0xc7)  # Chip erase (Microchip only)
+_CE = const(0xc7)  # Chip erase
+# STM only:
+_RDID_STM = const(0x83)  # Read ID page
+_WRID_STM = const(0x82)
+_STM_ID = const(0x30)  # Arbitrary ID for STM chip
 # Not implemented: Write disable and Write status register
 # _WRDI = const(4)
 # _WRSR = const(1)
-#_RDID_STM = const(0x83)  # STM only read ID page
-#_WRID_STM = const(0x82)
-#_STM_ID = const(0x30)  # Arbitrary ID for STM chip
 
 # Logical EEPROM device comprising one or more physical chips sharing an SPI bus.
 class EEPROM(BlockDevice):
@@ -39,37 +41,41 @@ class EEPROM(BlockDevice):
         self._mvp = memoryview(self._bufp)  # cost-free slicing
         self.scan(verbose)
 
-# STM Datasheet too vague about the ID block. Do we need _WREN? Do we need to poll ready?
-    #def _stm_rdid(self):
-        #mvp = self._mvp
-        #mvp[:] = b'\0\0\0\0\0'
-        #mvp[0] = _RDID_STM
-        #cs(0)
-        #self._spi.write_readinto(mvp, mvp)
-        #cs(1)
-        #return mvp[4]
+    # Read ID block ID[0]
+    def _stm_rdid(self, n):
+        cs = self._cspins[n]
+        mvp = self._mvp
+        mvp[:] = b'\0\0\0\0\0'
+        mvp[0] = _RDID_STM
+        cs(0)
+        self._spi.write_readinto(mvp, mvp)
+        cs(1)
+        return mvp[4]
 
-    #def _stm_wrid(self):
-        #mvp = self._mvp
-        #mvp[:] = b'\0\0\0\0\0'
-        #mvp[0] = _WRID_STM
-        #mvp[5] = _STM_ID
-        #cs(0)
-        #self._spi.write(mvp)
-        #cs(1)
+    # Write a fixed value to ID[0]
+    def _stm_wrid(self, n):
+        cs = self._ccs
+        mvp = self._mvp
+        mvp[0] = _WREN
+        cs(0)
+        self._spi.write(mvp[:1])  # Enable write
+        cs(1)
+        mvp[:] = b'\0\0\0\0\0'
+        mvp[0] = _WRID_STM
+        mvp[4] = _STM_ID
+        cs(0)
+        self._spi.write(mvp)
+        cs(1)
+        self._wait_rdy()
 
-    # Check for a valid hardware configuration: just see if we can write to offset 0
-    # Tested (on Microchip), but probably better to use ID block
+    # Check for valid hardware on each CS pin: use ID block
     def _stm_scan(self):
-        for n in range(len(self._cspins)):
-            ta = n * self._c_bytes
-            v = self[ta]
-            vx = v^0xff
-            self[ta] = vx
-            if self[ta] == vx:  # Wrote OK, put back
-                self[ta] = v
-            else:
-                raise RuntimeError('EEPROM not found at cs[{}].'.format(n))
+        for n, cs in enumerate(self._cspins):
+            self._ccs = cs
+            if self._stm_rdid(n) != _STM_ID:
+                self._stm_wrid(n)
+            if self._stm_rdid(n) != _STM_ID:
+                raise RuntimeError('M95M02 chip not found at cs[{}].'.format(n))
         return n
 
     # Scan for Microchip devices: read manf ID
@@ -82,7 +88,7 @@ class EEPROM(BlockDevice):
             self._spi.write_readinto(mvp, mvp)
             cs(1)
             if mvp[4] != 0x29:
-                raise RuntimeError('EEPROM not found at cs[{}].'.format(n))
+                raise RuntimeError('25xx1024 chip not found at cs[{}].'.format(n))
         return n
 
     # Check for a valid hardware configuration
@@ -163,3 +169,4 @@ class EEPROM(BlockDevice):
             nbytes -= npage
             start += npage
             addr += npage
+        return buf

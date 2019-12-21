@@ -1,6 +1,5 @@
 # eeprom_spi.py MicroPython driver for Microchip 128KiB SPI EEPROM device,
-# also STM 256KiB chip
-# TODO the latter not yet tested.
+# also STM 256KiB chip.
 
 # Released under the MIT License (MIT). See LICENSE.
 # Copyright (c) 2019 Peter Hinch

@@ -1,29 +1,26 @@
-# eep_spi.py MicroPython test program for Microchip SPI EEPROM devices.
+# flash_test.py MicroPython test program for Cypress SPI Flash devices.
 
 # Released under the MIT License (MIT). See LICENSE.
 # Copyright (c) 2019 Peter Hinch
 
 import uos
 from machine import SPI, Pin
-from eeprom_spi import EEPROM
+from flash_spi import FLASH
 # Add extra pins if using multiple chips
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
 
 # Return an EEPROM array. Adapt for platforms other than Pyboard.
-def get_eep(stm):
+def get_device():
     if uos.uname().machine.split(' ')[0][:4] == 'PYBD':
         Pin.board.EN_3V3.value(1)
-    if stm:
-        eep = EEPROM(SPI(2, baudrate=5_000_000), cspins, 256)
-    else:
-        eep = EEPROM(SPI(2, baudrate=20_000_000), cspins)
-    print('Instantiated EEPROM')
-    return eep
+    flash = FLASH(SPI(2, baudrate=5_000_000), cspins)
+    print('Instantiated Flash')
+    return flash
 
 # Dumb file copy utility to help with managing EEPROM contents at the REPL.
 def cp(source, dest):
     if dest.endswith('/'):  # minimal way to allow
-        dest = ''.join((dest, source.split('/')[-1]))  # cp /sd/file /eeprom/
+        dest = ''.join((dest, source.split('/')[-1]))  # cp /sd/file /fl_ext/
     with open(source, 'rb') as infile:  # Caller should handle any OSError
         with open(dest,'wb') as outfile:  # e.g file not found
             while True:
@@ -59,8 +56,8 @@ def _testblock(eep, bs):
     if res != d2:
         return 'Block test fail 3:' + str(list(res))
 
-def test(stm=False):
-    eep = get_eep(stm)
+def test():
+    eep = get_device()
     sa = 1000
     for v in range(256):
         eep[sa + v] = v
@@ -95,54 +92,39 @@ def test(stm=False):
         print('Test chip boundary skipped: only one chip!')
 
 # ***** TEST OF FILESYSTEM MOUNT *****
-def fstest(format=False, stm=False):
-    eep = get_eep(stm)
-    # ***** CODE FOR FATFS *****
-    #if format:
-        #uos.VfsFat.mkfs(eep)
-    #vfs=uos.VfsFat(eep)
-    #try:
-        #uos.mount(vfs,'/eeprom')
-    #except OSError:  # Already mounted
-        #pass
+def fstest(format=False):
+    eep = get_device()
     # ***** CODE FOR LITTLEFS *****
     if format:
         uos.VfsLfs2.mkfs(eep)
     try:
-        uos.mount(eep,'/eeprom')
+        uos.mount(eep,'/fl_ext')
     except OSError:  # Already mounted
         pass
     print('Contents of "/": {}'.format(uos.listdir('/')))
-    print('Contents of "/eeprom": {}'.format(uos.listdir('/eeprom')))
-    print(uos.statvfs('/eeprom'))
+    print('Contents of "/fl_ext": {}'.format(uos.listdir('/fl_ext')))
+    print(uos.statvfs('/fl_ext'))
 
-def cptest(stm=False):
-    eep = get_eep(stm)
-    if 'eeprom' in uos.listdir('/'):
+def cptest():
+    eep = get_device()
+    if 'fl_ext' in uos.listdir('/'):
         print('Device already mounted.')
     else:
-        #vfs=uos.VfsFat(eep)
-        #try:
-            #uos.mount(vfs,'/eeprom')
-        #except OSError:
-            #print('Fail mounting device. Have you formatted it?')
-            #return
-        #vfs=uos.VfsFat(eep)
         try:
-            uos.mount(eep,'/eeprom')
+            uos.mount(eep,'/fl_ext')
         except OSError:
             print('Fail mounting device. Have you formatted it?')
             return
         print('Mounted device.')
-    cp('eep_spi.py', '/eeprom/')
-    cp('eeprom_spi.py', '/eeprom/')
-    print('Contents of "/eeprom": {}'.format(uos.listdir('/eeprom')))
-    print(uos.statvfs('/eeprom'))
+    cp('flash_test.py', '/fl_ext/')
+    cp('flash_spi.py', '/fl_ext/')
+    print('Contents of "/fl_ext": {}'.format(uos.listdir('/fl_ext')))
+    print(uos.statvfs('/fl_ext'))
 
 
 # ***** TEST OF HARDWARE *****
-def full_test(stm=False):
-    eep = get_eep(stm)
+def full_test():
+    eep = get_device()
     page = 0
     for sa in range(0, len(eep), 256):
         data = uos.urandom(256)

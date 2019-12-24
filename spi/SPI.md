@@ -257,9 +257,9 @@ lost.
 
 ## 5.3 fstest(format=False, stm=False)
 
-If `True` is passed, formats the EEPROM array as a FAT filesystem and mounts
-the device on `/eeprom`. If no arg is passed it mounts the array and lists the
-contents. It also prints the outcome of `uos.statvfs` on the array.
+If `True` is passed, formats the EEPROM array as a littlefs filesystem and
+mounts the device on `/eeprom`. If no arg is passed it mounts the array and
+lists the contents. It also prints the outcome of `uos.statvfs` on the array.
 
 ## 5.4 cptest(stm=False)
 

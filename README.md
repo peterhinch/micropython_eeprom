@@ -2,7 +2,7 @@
 
 These drivers support nonvolatile memory chips and the littlefs filesystem.
 
-Currently supported devices use technologies having superior performance
+Currently supported devices include technologies having superior performance
 compared to flash. Resultant storage has much higher write endurance. In some
 cases read and write access times may be shorter. EEPROM and FRAM chips have
 much lower standby current than SD cards, benefiting micropower applications.
@@ -26,14 +26,15 @@ The drivers have the following common features:
 
 ## 1.2 Technologies
 
-Currently supported technologies are EEPROM and FRAM (ferroelectric RAM). These
-are nonvolatile random access storage devices with much higher endurance than
-flash memory. Flash has a typical endurance of 10K writes per page. The figures
-for EEPROM and FRAM are 1-4M and 10^12 writes respectively. In the case of the
-FAT filing system 1M page writes probably corresponds to 1M filesystem writes
-because FAT repeatedly updates the allocation tables in the low numbered
-sectors. If `littlefs` is used I would expect the endurance to be substantially
-better owing to its wear levelling architecture.
+Currently supported technologies are Flash, EEPROM and FRAM (ferroelectric
+RAM). The latter two are nonvolatile random access storage devices with much
+higher endurance than flash memory. Flash has a typical endurance of 10-100K
+writes per page. The figures for EEPROM and FRAM are 1-4M and 10^12 writes
+respectively. In the case of the FAT filing system 1M page writes probably
+corresponds to 1M filesystem writes because FAT repeatedly updates the
+allocation tables in the low numbered sectors. Under `littlefs` I would expect
+the endurance to be substantially better owing to its wear levelling
+architecture.
 
 ## 1.3 Supported chips
 
@@ -49,20 +50,23 @@ M95M02-DRMN6TP and M95M02-DWMN3TP/K. The latter has a wider temperature range.
 
 In the table below the Interface column includes page size in bytes.  
 
-| Manufacturer | Part      | Interface | Bytes  | Technology | Docs                      |
-|:------------:|:---------:|:---------:|:------:|:----------:|:-------------------------:|
-| STM          | M95M02-DR | SPI 256   | 256KiB |   EEPROM   | [SPI.md](./spi/SPI.md)    |
-| Microchip    | 25xx1024  | SPI 256   | 128KiB |   EEPROM   | [SPI.md](./spi/SPI.md)    |
-| Microchip    | 24xx512   | I2C 128   |  64KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
-| Microchip    | 24xx256   | I2C 128   |  32KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
-| Microchip    | 24xx128   | I2C 128   |  16KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
-| Microchip    | 24xx64    | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)    |
-| Adafruit     | 1895      | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md) |
+| Manufacturer | Part      | Interface | Bytes  | Technology | Docs                         |
+|:------------:|:---------:|:---------:|:------:|:----------:|:----------------------------:|
+| Cypress      | S25FL256L | SPI 4096  |  32MiB |   Flash    | [FLASH.md](./flash/FLASH.md) |
+| Cypress      | S25FL128L | SPI 4096  |  16MiB |   Flash    | [FLASH.md](./flash/FLASH.md) |
+| STM          | M95M02-DR | SPI 256   | 256KiB |   EEPROM   | [SPI.md](./spi/SPI.md)       |
+| Microchip    | 25xx1024  | SPI 256   | 128KiB |   EEPROM   | [SPI.md](./spi/SPI.md)       |
+| Microchip    | 24xx512   | I2C 128   |  64KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)       |
+| Microchip    | 24xx256   | I2C 128   |  32KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)       |
+| Microchip    | 24xx128   | I2C 128   |  16KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)       |
+| Microchip    | 24xx64    | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)       |
+| Adafruit     | 1895      | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md)    |
 
 Documentation:  
 [SPI.md](./spi/SPI.md)  
 [I2C.md](./i2c/I2C.md)  
 [FRAM.md](./fram/FRAM.md)  
+[FLASH.md](./flash/FLASH.md)  
 
 ## 1.4 Performance
 
@@ -78,6 +82,11 @@ The drivers provide the benefit of page writing in a way which is transparent.
 If you write a block of data to an arbitrary address, page writes will be used
 to minimise total time.
 
+In the case of flash memory page writing is mandatory: a sector is written by
+first erasing it, a process which is slow. This physical limitation means that
+the driver must buffer an entire 4096 byte sector. This contrasts with FRAM and
+EEPROM drivers where the buffering comprises a few bytes.
+
 # 2. Choice of interface
 
 The principal merit of I2C is to minimise pin count. It uses two pins
@@ -91,21 +100,38 @@ apparent on reads: write speed is limited by the EEPROM device. In principle
 expansion is limited only by the number of available pins. (In practice
 electrical limits may also apply).
 
-In the case of the Microchip devices supported, the SPI chip is larger at
-128KiB compared to a maximum of 64KiB in the I2C range.
+The larger capacity chips generally use SPI.
 
-# 3. Design details and test results
+# 3. Design details, littlefs support
 
-The fact that the API enables accessing blocks of data at arbitrary addresses
-implies that the handling of page addressing is done in the driver. This
-contrasts with drivers intended only for filesystem access. These devolve the
-detail of page addressing to the filesystem by specifying the correct page size
-in the ioctl and (if necessary) implementing a block erase method.
+A key aim of these drivers is support for littlefs. This requires the extended
+block device protocol as described
+[here](http://docs.micropython.org/en/latest/reference/filesystem.html) and
+[in the uos doc](http://docs.micropython.org/en/latest/library/uos.html).
+This protocol describes a block structured API capable of handling offsets into
+the block. It is therefore necessary for the device driver to deal with any
+block structuring inherent in the hardware. The device driver must enable
+access to varying amounts of data at arbitrary physical addresses.
 
-The nature of the drivers in this repo implies that the page size in the ioctl
-is arbitrary. Littlefs requires a minimum size of 128 bytes - 
+These drivers achieve this by implementing a device-dependent `readwrite`
+method which provides read and write access to arbitrary addresses, with data
+volumes which can span page and chip boundaries. A benefit of this is that the
+array of chips can be presented as a large byte array. This array is accessible
+by Python slice notation: behaviour provided by the hardware-independent base
+class.
+
+A consequence of the above is that the page size in the ioctl does not have any
+necessary connection with the memory hardware, so the drivers enable the value
+to be specified as a constructor argument. Littlefs requires a minimum size of
+128 bytes - 
 [theoretically 104](https://github.com/ARMmbed/littlefs/blob/master/DESIGN.md).
-The driver only allows powers of 2. Testing was done with 512 bytes.
+The drivers only allow powers of 2: in principle 128 bytes could be used. The
+default in MicroPython's littlefs implementation is 512 bytes and all testing
+was done with this value. FAT requires 512 bytes minimum: FAT testing was done
+with the same block size.
 
 The test programs use littlefs and therefore require MicroPython V1.12 or
-later.
+later. On platforms that don't support littlefs the options are either to adapt
+the test programs for FAT (code is commented out) or to build firmware with
+littlefs support. This can be done by passing `MICROPY_VFS_LFS2=1` to the
+`make` command.

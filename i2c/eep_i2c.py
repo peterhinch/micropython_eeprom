@@ -39,13 +39,13 @@ def _testblock(eep, bs):
     eep[start : end] = garbage
     res = eep[start : end]
     if res != garbage:
-        return 'Block test fail 1:' + res
+        return 'Block test fail 1:' + str(list(res))
     end = start + len(d0)
     eep[start : end] = d0
     end = start + len(garbage)
     res = eep[start : end]
     if res != b'this >xxxxxxxxxxxxx':
-        return 'Block test fail 2:' + res
+        return 'Block test fail 2:' + str(list(res))
     start = bs
     end = bs + len(d1)
     eep[start : end] = d1
@@ -53,7 +53,7 @@ def _testblock(eep, bs):
     end = start + len(d2)
     res = eep[start : end]
     if res != d2:
-        return 'Block test fail 3:' + res
+        return 'Block test fail 3:' + str(list(res))
 
 def test():
     eep = get_eep()

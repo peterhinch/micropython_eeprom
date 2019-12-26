@@ -123,16 +123,35 @@ def cptest():
 
 
 # ***** TEST OF HARDWARE *****
-def full_test():
-    eep = get_device()
-    page = 0
-    for sa in range(0, len(eep), 256):
+def full_test(count=10):
+    flash = get_device()
+    for n in range(count):
         data = uos.urandom(256)
-        eep[sa:sa + 256] = data
-        got = eep[sa:sa + 256]
+        while True:
+            sa = int.from_bytes(uos.urandom(4), 'little') & 0x3fffffff
+            if sa < (flash._a_bytes - 256):
+                break
+        flash[sa:sa + 256] = data
+        flash.synchronise()
+        got = flash[sa:sa + 256]
         if got == data:
-            print('Page {} passed'.format(page))
+            print('Pass {} address {:08x} passed'.format(n, sa))
+            if sa & 0xfff > (4096 -253):
+                print('cross boundary')
         else:
-            print('Page {} readback failed.'.format(page))
+            print('Pass {} address {:08x} readback failed.'.format(n, sa))
+            sa1 = sa & 0xfff
+            print('Bounds {} to {}'.format(sa1, sa1+256))
+#            flash.synchronise()
+            got1 = flash[sa:sa + 256]
+            if got1 == data:
+                print('second attempt OK')
+            else:
+                print('second attempt fail', got == got1)
+                for n, g in enumerate(got):
+                    if g != data[n]:
+                        print('{} {:2x} {:2x} {:2x}'.format(n, data[n], g, got1[n]))
             break
-        page += 1
+
+# Fail seems to be on write: two readbacks are always identical.
+# Error is on MSB of byte 0: write a 1 and get 0

@@ -124,7 +124,7 @@ class FLASH(FlashDevice):
     def _wait_rdy(self):  # After a write, wait for device to become ready
         mvp = self._mvp
         cs = self._ccs  # Chip is already current
-        while True:
+        while True:  # TODO read status register 2, raise OSError on nonzero.
             mvp[0] = _RDSR1
             cs(0)
             self._spi.write_readinto(mvp[:2], mvp[:2])
@@ -150,15 +150,16 @@ class FLASH(FlashDevice):
 
     # Erase sector. Address is start byte address of sector.
     def _sector_erase(self, addr):
-        self._getaddr(addr, 1)
-        cs = self._ccs  # Current chip select from _getaddr
-        mvp = self._mvp
-        mvp[0] = _WREN
-        cs(0)
-        self._spi.write(mvp[:1])  # Enable write
-        cs(1)
-        mvp[0] = _SE
-        cs(0)
-        self._spi.write(mvp[:5])  # Start erase
-        cs(1)
-        self._wait_rdy()  # Wait for erase to complete
+        if not self.is_empty(addr):
+            self._getaddr(addr, 1)
+            cs = self._ccs  # Current chip select from _getaddr
+            mvp = self._mvp
+            mvp[0] = _WREN
+            cs(0)
+            self._spi.write(mvp[:1])  # Enable write
+            cs(1)
+            mvp[0] = _SE
+            cs(0)
+            self._spi.write(mvp[:5])  # Start erase
+            cs(1)
+            self._wait_rdy()  # Wait for erase to complete

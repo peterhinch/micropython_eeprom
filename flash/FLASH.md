@@ -31,7 +31,7 @@ connected to 3V3 or left unconnected.
 
 | Flash | Signal  |  PB | Signal |
 |:-----:|:-------:|:---:|:------:|
-| 1     |  CS     | Y5  | SS/    |
+| 1     |  CS/    | Y5  | SS/    |
 | 2     |  SO     | Y7  | MISO   |
 | 3     |  WP/    | nc  | -      |
 | 4     |  Vss    | Gnd | Gnd    |
@@ -64,8 +64,11 @@ SPI bus is fast: wiring should be short and direct.
  1. `flash_spi.py` Device driver.
  2. `bdevice.py` (In root directory) Base class for the device driver.
  3. `flash_test.py` Test programs for above.
+ 4. `littlefs_test.py` Torture test for the littlefs filesystem on the flash
+ array.
 
-Installation: copy files 1 and 2 (optionally 3) to the target filesystem.
+Installation: copy files 1 and 2 (3 & 4 are optional) to the target filesystem.
+Test scripts assume two chips with CS/ pins wired to Pyboard pins Y4 and Y5.
 
 # 4. The device driver
 

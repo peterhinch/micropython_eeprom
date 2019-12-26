@@ -13,6 +13,8 @@
 # of data to arbitrary addresses. IOW .readwrite handles physical block structure
 # while ioctl supports a virtual block size.
 
+from micropython import const
+
 class BlockDevice:
 
     def __init__(self, nbits, nchips, chip_size):
@@ -87,6 +89,8 @@ class BlockDevice:
 # .flush(cache, addr)  Erase physical sector and write out an entire cached sector.
 # .readwrite As per base class.
 
+_RDBUFSIZE = const(32)  # Size of read buffer for erasure test
+
 class FlashDevice(BlockDevice):
 
     def __init__(self, nbits, nchips, chip_size, sec_size):
@@ -94,6 +98,8 @@ class FlashDevice(BlockDevice):
         self.sec_size = sec_size
         self._cache_mask = sec_size - 1  # For 4K sector size: 0xfff
         self._fmask = self._cache_mask ^ 0x3fffffff  # 4K -> 0x3ffff000
+        self._buf = bytearray(_RDBUFSIZE)
+        self._mvbuf = memoryview(self._buf)
         self._cache = bytearray(sec_size)  # Cache always contains one sector
         self._mvd = memoryview(self._cache)
         self._acache = 0  # Address in chip of byte 0 of current cached sector
@@ -151,3 +157,16 @@ class FlashDevice(BlockDevice):
 
     def initialise(self):
         self._fill_cache(0)
+
+    # Return True if a sector is erased. Assumes erased == ff.
+    def is_empty(self, addr):
+        mvb = self._mvbuf
+        erased = True
+        nbufs = self.sec_size // _RDBUFSIZE  # Read buffers per sector
+        for _ in range(nbufs):
+            self.rdchip(addr, mvb)
+            if any(True for x in mvb if x != 0xff):
+                erased = False
+                break
+            addr += _RDBUFSIZE
+        return erased

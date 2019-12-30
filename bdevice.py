@@ -65,6 +65,9 @@ class BlockDevice:
         return self.readwrite(start, buf, True)
 
     # IOCTL protocol.
+    def sync(self):  # Nothing to do for unbuffered devices. Subclass overrides.
+        return 0
+
     def readblocks(self, blocknum, buf, offset=0):
         self.readwrite(offset + (blocknum << self._nbits), buf, True)
 
@@ -72,7 +75,9 @@ class BlockDevice:
         offset = 0 if offset is None else offset
         self.readwrite(offset + (blocknum << self._nbits), buf, False)
 
-    def ioctl(self, op, arg):
+    def ioctl(self, op, arg):  # ioctl calls: see extmod/vfs.h
+        if op == 3:  # SYNCHRONISE
+            return self.sync()
         if op == 4:  # BP_IOCTL_SEC_COUNT
             return self._a_bytes >> self._nbits
         if op == 5:  # BP_IOCTL_SEC_SIZE
@@ -83,6 +88,7 @@ class BlockDevice:
 # Hardware agnostic base class for flash memory, where a single sector is cached.
 # This minimises RAM usage. Under FAT wear is reduced if you cache at least two
 # sectors. This driver is primarily intended for littlefs which has no such issue.
+# Class assumes erased state is 0xff.
 
 # Subclass must provide these hardware-dependent methods:
 # .rdchip(addr, mvb) Read from chip into memoryview: data guaranteed not to be cached.
@@ -90,6 +96,7 @@ class BlockDevice:
 # .readwrite As per base class.
 
 _RDBUFSIZE = const(32)  # Size of read buffer for erasure test
+
 
 class FlashDevice(BlockDevice):
 
@@ -102,7 +109,10 @@ class FlashDevice(BlockDevice):
         self._mvbuf = memoryview(self._buf)
         self._cache = bytearray(sec_size)  # Cache always contains one sector
         self._mvd = memoryview(self._cache)
-        self._acache = 0  # Address in chip of byte 0 of current cached sector
+        self._acache = 0  # Address in chip of byte 0 of current cached sector.
+        # A newly cached sector, or one which has been flushed, will be clean,
+        # so .sync() will do nothing. If cache is modified, dirty will be set.
+        self._dirty = False
 
     def read(self, addr, mvb):
         nbytes = len(mvb)
@@ -126,23 +136,26 @@ class FlashDevice(BlockDevice):
                 self.rdchip(addr + nr, mvb[boff + nr : ])
         return mvb
 
-    def synchronise(self):
-#        print('SYNCHRONISE')
-        self.flush(self._mvd, self._acache)  # Write out old data
+    def sync(self):
+        if self._dirty:
+            self.flush(self._mvd, self._acache)  # Write out old data
+        self._dirty = False
+        return 0
 
-# TODO Performance enhancement: if cache intersects address range, update it first.
-# Currently in this case it would be written twice.
+# Performance enhancement: if cache intersects address range, update it first.
+# Currently in this case it would be written twice. This may be rare.
     def write(self, addr, mvb):
         nbytes = len(mvb)
         acache = self._acache
         boff = 0  # Offset into buf.
         while nbytes:
             if (addr & self._fmask) != acache:
-                self.synchronise()  # Erase sector and write out old data
+                self.sync()  # Erase sector and write out old data
                 self._fill_cache(addr)  # Cache sector which includes addr
             offs = addr & self._cache_mask  # Offset into cache
             npage = min(nbytes, self.sec_size - offs)  # No. of bytes in current sector
             self._mvd[offs : offs + npage] = mvb[boff : boff + npage]
+            self._dirty = True  # Cache contents do not match those of chip
             nbytes -= npage
             boff += npage
             addr += npage
@@ -154,6 +167,7 @@ class FlashDevice(BlockDevice):
         addr &= self._fmask
         self.rdchip(addr, self._mvd)
         self._acache = addr
+        self._dirty = False
 
     def initialise(self):
         self._fill_cache(0)

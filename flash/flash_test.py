@@ -132,7 +132,7 @@ def full_test(count=10):
             if sa < (flash._a_bytes - 256):
                 break
         flash[sa:sa + 256] = data
-        flash.synchronise()
+        flash.sync()
         got = flash[sa:sa + 256]
         if got == data:
             print('Pass {} address {:08x} passed'.format(n, sa))
@@ -142,7 +142,7 @@ def full_test(count=10):
             print('Pass {} address {:08x} readback failed.'.format(n, sa))
             sa1 = sa & 0xfff
             print('Bounds {} to {}'.format(sa1, sa1+256))
-#            flash.synchronise()
+#            flash.sync()
             got1 = flash[sa:sa + 256]
             if got1 == data:
                 print('second attempt OK')

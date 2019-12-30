@@ -148,7 +148,8 @@ class FLASH(FlashDevice):
         pe = (addr & -self._c_bytes) + self._c_bytes  # Byte 0 of next chip
         return min(nbytes, pe - la)
 
-    # Erase sector. Address is start byte address of sector.
+    # Erase sector. Address is start byte address of sector. Optimisation: skip
+    # if sector is already erased.
     def _sector_erase(self, addr):
         if not self.is_empty(addr):
             self._getaddr(addr, 1)

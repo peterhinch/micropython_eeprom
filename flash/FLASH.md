@@ -22,6 +22,9 @@ an inevitable price for the large capacity of flash chips.
 FAT and littlefs filesystems are supported but the latter is preferred owing to
 its resilience and wear levelling characteristics.
 
+Byte level access on such large devices probably has few use cases other than
+for facilitating effective hardware tests and diagnostics.
+
 # 2. Connections
 
 Any SPI interface may be used. The table below assumes a Pyboard running SPI(2)
@@ -41,7 +44,7 @@ connected to 3V3 or left unconnected.
 | 8     |  Vcc    | 3V3 | 3V3    |
 
 For multiple chips a separate CS pin must be assigned to each chip: each one
-must be wired to a single chip's CS line. Multiple chips should have 3V3, Gnd,
+being wired to a single chip's CS line. Multiple chips should have 3V3, Gnd,
 SCL, MOSI and MISO lines wired in parallel.
 
 If you use a Pyboard D and power the chips from the 3V3 output you will need
@@ -49,15 +52,15 @@ to enable the voltage rail by issuing:
 ```python
 machine.Pin.board.EN_3V3.value(1)
 ```
-Other platforms may vary.
+Other platforms may vary but the Cypress chips require a 3.3V supply.
 
 ## 2.1 SPI Bus
 
 The devices support baudrates up to 50MHz. In practice MicroPython targets do
 not support such high rates. In testing I found it necessary to specify 5MHz
 otherwise erratic results occurred. This was probably because of my breadboard
-test setup. On a PCB I would hope to run at a sunbstantially higher rate. The
-SPI bus is fast: wiring should be short and direct.
+test setup. I have a PCB in manufacture and hope to run at 20MHz. For now code
+samples specify 5MHz. SPI bus wiring should be short and direct.
 
 # 3. Files
 
@@ -74,7 +77,7 @@ Test scripts assume two chips with CS/ pins wired to Pyboard pins Y4 and Y5.
 
 The driver supports mounting the Flash chips as a filesystem. Initially the
 device will be unformatted so it is necessary to issue code along these lines
-to format the device. Code assumes two devices and also assumes the littlefs
+to format the device. Code assumes two devices and the (recommended) littlefs
 filesystem:
 
 ```python
@@ -82,19 +85,17 @@ import os
 from machine import SPI, Pin
 from flash_spi import FLASH
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-flash = FLASH(SPI(2, baudrate=20_000_000), cspins)
+flash = FLASH(SPI(2, baudrate=5_000_000), cspins)
 # Format the filesystem
 os.VfsLfs2.mkfs(flash)  # Omit this to mount an existing filesystem
 os.mount(flash,'/fl_ext')
 ```
-The above will reformat a drive with an existing filesystem: to mount an
-existing filesystem simply omit the commented line.
+The above will reformat a drive with an existing filesystem erasing all files:
+to mount an existing filesystem omit the commented line.
 
 Note that, at the outset, you need to decide whether to use the array as a
-mounted filesystem or as a byte array. The filesystem is relatively small but
-has high integrity owing to the hardware longevity. Typical use-cases involve
-files which are frequently updated. These include files used for storing Python
-objects serialised using Pickle/ujson or files holding a btree database.
+mounted filesystem or as a byte array. Most use cases for flash will require a
+filesystem, although byte level reads may be used to debug filesystem issues.
 
 The SPI bus must be instantiated using the `machine` module.
 
@@ -107,7 +108,8 @@ multiple physical devices on a common SPI bus.
 
 This tests each chip in the list of chip select pins - if a chip is detected on
 each chip select line a flash array is instantiated. A `RuntimeError` will be
-raised if a device is not detected on a CS line.
+raised if a device is not detected on a CS line. The test has no effect on
+the array contents.
 
 Arguments:  
  1. `spi` Mandatory. An initialised SPI bus created by `machine`.
@@ -146,7 +148,7 @@ of single byte access:
 from machine import SPI, Pin
 from flash_spi import FLASH
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-flash = FLASH(SPI(2, baudrate=20_000_000), cspins)
+flash = FLASH(SPI(2, baudrate=5_000_000), cspins)
 flash[2000] = 42
 print(flash[2000])  # Return an integer
 ```
@@ -156,7 +158,7 @@ writing, the size of the slice must match the length of the buffer:
 from machine import SPI, Pin
 from flash_spi import FLASH
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-flash = FLASH(SPI(2, baudrate=20_000_000), cspins)
+flash = FLASH(SPI(2, baudrate=5_000_000), cspins)
 flash[2000:2002] = bytearray((42, 43))
 print(flash[2000:2002])  # Returns a bytearray
 ```
@@ -178,12 +180,13 @@ advantage when reading of using a pre-allocated buffer. Arguments:
 
 ### 4.1.3 Other methods
 
-#### synchronise
+#### sync
 
-This causes the cached sector to be written to the device. Should be called
-prior to power down. **TODO: check flush/synchronise**
+This causes the cached sector to be written to the device. In normal filesystem
+use this need not be called. If byte-level writes have been performed it should
+be called prior to power down.
 
-#### The len() operator
+#### The len operator
 
 The size of the flash array in bytes may be retrieved by issuing `len(flash)`
 where `flash` is the `FLASH` instance.
@@ -196,7 +199,7 @@ pin does not correspond to a valid chip.
 
 Other than for debugging there is no need to call `scan()`: the constructor
 will throw a `RuntimeError` if it fails to communicate with and correctly
-identify the chip.
+identify each chip.
 
 #### erase
 
@@ -224,17 +227,19 @@ This performs a basic test of single and multi-byte access to chip 0. The test
 reports how many chips can be accessed. Existing array data will be lost. This
 primarily tests the driver: as a hardware test it is not exhaustive.
 
-## 5.2 full_test()
+## 5.2 full_test(count=10)
 
-This is a hardware test. Tests the entire array. Fills each 256 byte page with
-random data, reads it back, and checks the outcome. Existing array data will be
-lost. **TODO long run time.**
+This is a hardware test. Tests the entire array. Creates an array of 256 bytes
+of random data and writes it to a random address. After synchronising the cache
+with the hardware, reads it back, and checks the outcome. Existing array data
+will be lost. The arg determines the number of passes.
 
 ## 5.3 fstest(format=False)
 
-If `True` is passed, formats the flash array as a littlefs filesystem and mounts
-the device on `/fl_ext`. If no arg is passed it mounts the array and lists the
-contents. It also prints the outcome of `uos.statvfs` on the array.
+If `True` is passed, formats the flash array as a littlefs filesystem deleting
+existing contents. In both cases of the arg it mounts the device on `/fl_ext`
+lists the contents of the mountpoint. It also prints the outcome of
+`uos.statvfs` on the mountpoint.
 
 ## 5.4 cptest()
 

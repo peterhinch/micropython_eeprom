@@ -97,37 +97,30 @@ def test(stm=False):
 # ***** TEST OF FILESYSTEM MOUNT *****
 def fstest(format=False, stm=False):
     eep = get_eep(stm)
+    try:
+        uos.umount('/eeprom')
+    except OSError:
+        pass
     # ***** CODE FOR FATFS *****
     #if format:
-        #uos.VfsFat.mkfs(eep)
-    #vfs=uos.VfsFat(eep)
-    #try:
-        #uos.mount(vfs,'/eeprom')
-    #except OSError:  # Already mounted
-        #pass
+        #os.VfsFat.mkfs(eep)
     # ***** CODE FOR LITTLEFS *****
     if format:
         uos.VfsLfs2.mkfs(eep)
+    # General
     try:
         uos.mount(eep,'/eeprom')
-    except OSError:  # Already mounted
-        pass
+    except OSError:
+        raise OSError("Can't mount device: have you formatted it?")
     print('Contents of "/": {}'.format(uos.listdir('/')))
     print('Contents of "/eeprom": {}'.format(uos.listdir('/eeprom')))
     print(uos.statvfs('/eeprom'))
 
-def cptest(stm=False):
+def cptest(stm=False):  # Assumes pre-existing filesystem of either type
     eep = get_eep(stm)
     if 'eeprom' in uos.listdir('/'):
         print('Device already mounted.')
     else:
-        #vfs=uos.VfsFat(eep)
-        #try:
-            #uos.mount(vfs,'/eeprom')
-        #except OSError:
-            #print('Fail mounting device. Have you formatted it?')
-            #return
-        #vfs=uos.VfsFat(eep)
         try:
             uos.mount(eep,'/eeprom')
         except OSError:

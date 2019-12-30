@@ -36,7 +36,14 @@ allocation tables in the low numbered sectors. Under `littlefs` I would expect
 the endurance to be substantially better owing to its wear levelling
 architecture.
 
-## 1.3 Supported chips
+## 1.3 Organisation of this repo
+
+The directory structure is `technology/interface` where supported chips for a
+given technology offer SPI and I2C interfaces; where only one interface exists
+the `interface` subdirectory is omitted. The file `bdevice.py` is common to all
+drivers and is in the root directory.
+
+## 1.4 Supported chips
 
 These currently include Microchip and STM EEPROM chips and
 [this Adafruit FRAM board](http://www.adafruit.com/product/1895). Note that the
@@ -50,25 +57,25 @@ M95M02-DRMN6TP and M95M02-DWMN3TP/K. The latter has a wider temperature range.
 
 In the table below the Interface column includes page size in bytes.  
 
-| Manufacturer | Part      | Interface | Bytes  | Technology | Docs                         |
-|:------------:|:---------:|:---------:|:------:|:----------:|:----------------------------:|
-| Cypress      | S25FL256L | SPI 4096  |  32MiB |   Flash    | [FLASH.md](./flash/FLASH.md) |
-| Cypress      | S25FL128L | SPI 4096  |  16MiB |   Flash    | [FLASH.md](./flash/FLASH.md) |
-| STM          | M95M02-DR | SPI 256   | 256KiB |   EEPROM   | [SPI.md](./spi/SPI.md)       |
-| Microchip    | 25xx1024  | SPI 256   | 128KiB |   EEPROM   | [SPI.md](./spi/SPI.md)       |
-| Microchip    | 24xx512   | I2C 128   |  64KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)       |
-| Microchip    | 24xx256   | I2C 128   |  32KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)       |
-| Microchip    | 24xx128   | I2C 128   |  16KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)       |
-| Microchip    | 24xx64    | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./i2c/I2C.md)       |
-| Adafruit     | 1895      | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md)    |
+| Manufacturer | Part      | Interface | Bytes  | Technology | Docs                          |
+|:------------:|:---------:|:---------:|:------:|:----------:|:-----------------------------:|
+| Cypress      | S25FL256L | SPI 4096  |  32MiB |   Flash    | [FLASH.md](./flash/FLASH.md)  |
+| Cypress      | S25FL128L | SPI 4096  |  16MiB |   Flash    | [FLASH.md](./flash/FLASH.md)  |
+| STM          | M95M02-DR | SPI 256   | 256KiB |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
+| Microchip    | 25xx1024  | SPI 256   | 128KiB |   EEPROM   | [SPI.md](./eeprom/SPI.md)     |
+| Microchip    | 24xx512   | I2C 128   |  64KiB |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Microchip    | 24xx256   | I2C 128   |  32KiB |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Microchip    | 24xx128   | I2C 128   |  16KiB |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Microchip    | 24xx64    | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Adafruit     | 1895      | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md)     |
 
 Documentation:  
-[SPI.md](./spi/SPI.md)  
-[I2C.md](./i2c/I2C.md)  
+[SPI.md](./eeprom/spi/SPI.md)  
+[I2C.md](./eeprom/i2c/I2C.md)  
 [FRAM.md](./fram/FRAM.md)  
 [FLASH.md](./flash/FLASH.md)  
 
-## 1.4 Performance
+## 1.5 Performance
 
 FRAM is truly byte-addressable: its speed is limited only by the speed of the
 I2C interface.

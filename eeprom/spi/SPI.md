@@ -18,6 +18,8 @@ The driver has the following attributes:
  7. Alternatively it can support byte-level access using Python slice syntax.
  8. RAM allocations are minimised. Buffer sizes are tiny.
 
+##### [Main readme](../../README.md)
+
 ## 1.1 This document
 
 Code samples assume one or more Microchip devices. If using the STM chip the
@@ -177,7 +179,7 @@ advantage when reading of using a pre-allocated buffer. Arguments:
 
 ### 4.1.3 Other methods
 
-#### The len() operator
+#### The len operator
 
 The size of the EEPROM array in bytes may be retrieved by issuing `len(eep)`
 where `eep` is the `EEPROM` instance.

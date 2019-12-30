@@ -25,6 +25,8 @@ its resilience and wear levelling characteristics.
 Byte level access on such large devices probably has few use cases other than
 for facilitating effective hardware tests and diagnostics.
 
+##### [Main readme](../README.md)
+
 # 2. Connections
 
 Any SPI interface may be used. The table below assumes a Pyboard running SPI(2)

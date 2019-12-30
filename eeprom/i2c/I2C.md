@@ -20,6 +20,8 @@ the subsequent improvements to MicroPython to achieve these advantages:
  7. Alternatively it can support byte-level access using Python slice syntax.
  8. RAM allocations are reduced.
 
+##### [Main readme](../../README.md)
+
 # 2. Connections
 
 Any I2C interface may be used. The table below assumes a Pyboard running I2C(2)
@@ -168,7 +170,7 @@ advantage when reading of using a pre-allocated buffer. Arguments:
 
 ### 4.1.3 Other methods
 
-#### The len() operator
+#### The len operator
 
 The size of the EEPROM array in bytes may be retrieved by issuing `len(eep)`
 where `eep` is the `EEPROM` instance.

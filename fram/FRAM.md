@@ -19,6 +19,8 @@ array of bytes.
 For users interested in the technology [this](https://www.mouser.com/pdfDOCS/cypress-fram-whitepaper.pdf)
 is worth reading. Clue: the FRAM cell contains no iron.
 
+##### [Main readme](../README.md)
+
 ## 1.1 Changes compared to the old FRAM driver
 
 API now matches other devices with support for slice syntax. Reduced RAM

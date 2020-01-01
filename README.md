@@ -69,11 +69,8 @@ In the table below the Interface column includes page size in bytes.
 | Microchip    | 24xx64    | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Adafruit     | 1895      | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md)     |
 
-Documentation:  
-[SPI.md](./eeprom/spi/SPI.md)  
-[I2C.md](./eeprom/i2c/I2C.md)  
-[FRAM.md](./fram/FRAM.md)  
-[FLASH.md](./flash/FLASH.md)  
+Note that the flash driver is **under development** and has a possible issue
+discussed in [FLASH.md](./flash/FLASH.md).
 
 ## 1.5 Performance
 
@@ -109,7 +106,7 @@ electrical limits may also apply).
 
 The larger capacity chips generally use SPI.
 
-# 3. Design details, littlefs support
+# 3. Design details
 
 A key aim of these drivers is support for littlefs. This requires the extended
 block device protocol as described
@@ -136,6 +133,13 @@ The drivers only allow powers of 2: in principle 128 bytes could be used. The
 default in MicroPython's littlefs implementation is 512 bytes and all testing
 was done with this value. FAT requires 512 bytes minimum: FAT testing was done
 with the same block size.
+
+## 3.1 Developer Documentation
+
+This [doc](./BASE_CLASSES.md) has information on the base classes for those
+wishing to write drivers for other memory devices.
+
+# 4. littlefs support
 
 The test programs use littlefs and therefore require MicroPython V1.12 or
 later. On platforms that don't support littlefs the options are either to adapt

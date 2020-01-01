@@ -25,6 +25,21 @@ its resilience and wear levelling characteristics.
 Byte level access on such large devices probably has few use cases other than
 for facilitating effective hardware tests and diagnostics.
 
+## 1.1 Test Status
+
+The driver has been tested with both chip types. Single chip setups work fine.
+With pairs of devices I have seen sporadic single bit errors, especially at
+high baudrates. I strongly suspect hardware issues with my breadboard lash-up
+and am awaiting PCB's in manufacture. The reasons I suspect hardware are:
+
+ 1. Errors are usually single bit: it's hard to see how the driver could do
+ this.
+ 2. Errors are not consistent.
+ 3. They are baudrate dependent.
+ 4. The breadboard is truly revoltming.
+
+However until I can test with a PCB the possibility of a bug remains.
+
 ##### [Main readme](../README.md)
 
 # 2. Connections
@@ -61,8 +76,7 @@ Other platforms may vary but the Cypress chips require a 3.3V supply.
 The devices support baudrates up to 50MHz. In practice MicroPython targets do
 not support such high rates. In testing I found it necessary to specify 5MHz
 otherwise erratic results occurred. This was probably because of my breadboard
-test setup. I have a PCB in manufacture and hope to run at 20MHz. For now code
-samples specify 5MHz. SPI bus wiring should be short and direct.
+test setup as described above. SPI bus wiring should be short and direct.
 
 # 3. Files
 
@@ -70,10 +84,18 @@ samples specify 5MHz. SPI bus wiring should be short and direct.
  2. `bdevice.py` (In root directory) Base class for the device driver.
  3. `flash_test.py` Test programs for above.
  4. `littlefs_test.py` Torture test for the littlefs filesystem on the flash
- array.
+ array. Requires `flash_test.py` which it uses for hardware configuration.
 
 Installation: copy files 1 and 2 (3 & 4 are optional) to the target filesystem.
-Test scripts assume two chips with CS/ pins wired to Pyboard pins Y4 and Y5.
+The `flash_test` script assumes two S25FL256L chips connected to SPI(2) with
+CS/ pins wired to Pyboard pins Y4 and Y5. The `get_device` function may be
+adapted for other setups and is shared with `littlefs_test`.
+
+For a quick check of hardware issue:
+```python
+import flash_test
+flash_test.test()
+```
 
 # 4. The device driver
 
@@ -227,7 +249,8 @@ following.
 
 This performs a basic test of single and multi-byte access to chip 0. The test
 reports how many chips can be accessed. Existing array data will be lost. This
-primarily tests the driver: as a hardware test it is not exhaustive.
+primarily tests the driver: as a hardware test it is not exhaustive. It does
+provide a quick verification that all chips can be accessed.
 
 ## 5.2 full_test(count=10)
 

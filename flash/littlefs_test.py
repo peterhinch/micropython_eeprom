@@ -6,16 +6,7 @@
 import uos
 from machine import SPI, Pin
 from flash_spi import FLASH
-
-cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-
-# Return flash array. Adapt for platforms other than Pyboard.
-def get_device():
-    if uos.uname().machine.split(' ')[0][:4] == 'PYBD':
-        Pin.board.EN_3V3.value(1)
-    flash = FLASH(SPI(2, baudrate=5_000_000), cspins)
-    print('Instantiated Flash')
-    return flash
+from flash_test import get_device
 
 directory = '/fl_ext'
 a = bytearray(range(256))

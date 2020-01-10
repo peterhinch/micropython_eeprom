@@ -1,19 +1,13 @@
 # bdevice.py Hardware-agnostic base classes.
 # BlockDevice Base class for general block devices e.g. EEPROM, FRAM.
 # FlashDevice Base class for generic Flash memory (subclass of BlockDevice).
+# Documentation in BASE_CLASSES.md
 
 # Released under the MIT License (MIT). See LICENSE.
 # Copyright (c) 2019 Peter Hinch
 
-# BlockDevice: hardware-independent class implementing the uos.AbstractBlockDev
-# protocol with extended interface. It supports littlefs.
-# http://docs.micropython.org/en/latest/reference/filesystem.html#custom-block-devices
-
-# The subclass must implement .readwrite which can read or write arbitrary amounts
-# of data to arbitrary addresses. IOW .readwrite handles physical block structure
-# while ioctl supports a virtual block size.
-
 from micropython import const
+
 
 class BlockDevice:
 
@@ -66,34 +60,26 @@ class BlockDevice:
 
     # IOCTL protocol.
     def sync(self):  # Nothing to do for unbuffered devices. Subclass overrides.
-        return 0
+        return
 
     def readblocks(self, blocknum, buf, offset=0):
         self.readwrite(offset + (blocknum << self._nbits), buf, True)
 
-    def writeblocks(self, blocknum, buf, offset=None):
-        offset = 0 if offset is None else offset
+    def writeblocks(self, blocknum, buf, offset=0):
         self.readwrite(offset + (blocknum << self._nbits), buf, False)
 
     def ioctl(self, op, arg):  # ioctl calls: see extmod/vfs.h
         if op == 3:  # SYNCHRONISE
-            return self.sync()
+            self.sync()
+            return
         if op == 4:  # BP_IOCTL_SEC_COUNT
             return self._a_bytes >> self._nbits
         if op == 5:  # BP_IOCTL_SEC_SIZE
             return self._block_size
-        if op == 6:  # Erase
+        if op == 6:  # ERASE
             return 0
 
-# Hardware agnostic base class for flash memory, where a single sector is cached.
-# This minimises RAM usage. Under FAT wear is reduced if you cache at least two
-# sectors. This driver is primarily intended for littlefs which has no such issue.
-# Class assumes erased state is 0xff.
-
-# Subclass must provide these hardware-dependent methods:
-# .rdchip(addr, mvb) Read from chip into memoryview: data guaranteed not to be cached.
-# .flush(cache, addr)  Erase physical sector and write out an entire cached sector.
-# .readwrite As per base class.
+# Hardware agnostic base class for flash memory.
 
 _RDBUFSIZE = const(32)  # Size of read buffer for erasure test
 
@@ -172,14 +158,14 @@ class FlashDevice(BlockDevice):
     def initialise(self):
         self._fill_cache(0)
 
-    # Return True if a sector is erased. Assumes erased == ff.
-    def is_empty(self, addr):
+    # Return True if a sector is erased.
+    def is_empty(self, addr, ev=0xff):
         mvb = self._mvbuf
         erased = True
         nbufs = self.sec_size // _RDBUFSIZE  # Read buffers per sector
         for _ in range(nbufs):
             self.rdchip(addr, mvb)
-            if any(True for x in mvb if x != 0xff):
+            if any(True for x in mvb if x != ev):
                 erased = False
                 break
             addr += _RDBUFSIZE

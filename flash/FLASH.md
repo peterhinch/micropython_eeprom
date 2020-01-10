@@ -2,7 +2,8 @@
 
 This driver supports the Cypress S25FL256L and S25FL128L chips, providing 64MiB
 and 32MiB respectively. These have 100K cycles of write endurance (compared to
-10K for Pyboard Flash memory).
+10K for Pyboard Flash memory). These were the largest capacity available with a
+sector size small enough for microcontroller use.
 
 Multiple chips may be used to construct a single logical nonvolatile memory
 module. The driver allows the memory either to be mounted in the target
@@ -22,23 +23,8 @@ an inevitable price for the large capacity of flash chips.
 FAT and littlefs filesystems are supported but the latter is preferred owing to
 its resilience and wear levelling characteristics.
 
-Byte level access on such large devices probably has few use cases other than
-for facilitating effective hardware tests and diagnostics.
-
-## 1.1 Test Status
-
-The driver has been tested with both chip types. Single chip setups work fine.
-With pairs of devices I have seen sporadic single bit errors, especially at
-high baudrates. I strongly suspect hardware issues with my breadboard lash-up
-and am awaiting PCB's in manufacture. The reasons I suspect hardware are:
-
- 1. Errors are usually single bit: it's hard to see how the driver could do
- this.
- 2. Errors are not consistent.
- 3. They are baudrate dependent.
- 4. The breadboard is truly revoltming.
-
-However until I can test with a PCB the possibility of a bug remains.
+Arguably byte level access on such large devices has few use cases other than
+for facilitating effective hardware tests and for diagnostics.
 
 ##### [Main readme](../README.md)
 
@@ -74,9 +60,10 @@ Other platforms may vary but the Cypress chips require a 3.3V supply.
 ## 2.1 SPI Bus
 
 The devices support baudrates up to 50MHz. In practice MicroPython targets do
-not support such high rates. In testing I found it necessary to specify 5MHz
-otherwise erratic results occurred. This was probably because of my breadboard
-test setup as described above. SPI bus wiring should be short and direct.
+not support such high rates. The test programs specify 20MHz, but in practice
+the Pyboard D delivers 15MHz. Testing was done at this rate. In testing a
+"lashup" breadboard was unsatisfactory: a problem entirely fixed with a PCB.
+Bus lines should be short and direct.
 
 # 3. Files
 
@@ -109,7 +96,7 @@ import os
 from machine import SPI, Pin
 from flash_spi import FLASH
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-flash = FLASH(SPI(2, baudrate=5_000_000), cspins)
+flash = FLASH(SPI(2, baudrate=20_000_000), cspins)
 # Format the filesystem
 os.VfsLfs2.mkfs(flash)  # Omit this to mount an existing filesystem
 os.mount(flash,'/fl_ext')
@@ -172,7 +159,7 @@ of single byte access:
 from machine import SPI, Pin
 from flash_spi import FLASH
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-flash = FLASH(SPI(2, baudrate=5_000_000), cspins)
+flash = FLASH(SPI(2, baudrate=20_000_000), cspins)
 flash[2000] = 42
 print(flash[2000])  # Return an integer
 ```
@@ -182,7 +169,7 @@ writing, the size of the slice must match the length of the buffer:
 from machine import SPI, Pin
 from flash_spi import FLASH
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-flash = FLASH(SPI(2, baudrate=5_000_000), cspins)
+flash = FLASH(SPI(2, baudrate=20_000_000), cspins)
 flash[2000:2002] = bytearray((42, 43))
 print(flash[2000:2002])  # Returns a bytearray
 ```

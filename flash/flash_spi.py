@@ -109,6 +109,7 @@ class FLASH(FlashDevice):
             self._spi.write(mvp[:5])
             self._spi.readinto(mvb[start : start + npage])
             cs(1)
+#            print('addr {} npage {} data {}'.format(addr, npage, mvb[start]))
             nbytes -= npage
             start += npage
             addr += npage

@@ -34,7 +34,7 @@ respectively. In the case of the FAT filing system 1M page writes probably
 corresponds to 1M filesystem writes because FAT repeatedly updates the
 allocation tables in the low numbered sectors. Under `littlefs` I would expect
 the endurance to be substantially better owing to its wear levelling
-architecture.
+architecture; over-provisioning should enhance this.
 
 ## 1.3 Organisation of this repo
 
@@ -69,9 +69,6 @@ In the table below the Interface column includes page size in bytes.
 | Microchip    | 24xx64    | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Adafruit     | 1895      | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md)     |
 
-Note that the flash driver is **under development** and has a possible issue
-discussed in [FLASH.md](./flash/FLASH.md).
-
 ## 1.5 Performance
 
 FRAM is truly byte-addressable: its speed is limited only by the speed of the
@@ -86,9 +83,9 @@ The drivers provide the benefit of page writing in a way which is transparent.
 If you write a block of data to an arbitrary address, page writes will be used
 to minimise total time.
 
-In the case of flash memory page writing is mandatory: a sector is written by
-first erasing it, a process which is slow. This physical limitation means that
-the driver must buffer an entire 4096 byte sector. This contrasts with FRAM and
+In the case of flash, page writing is mandatory: a sector is written by first
+erasing it, a process which is slow. This physical limitation means that the
+driver must buffer an entire 4096 byte sector. This contrasts with FRAM and
 EEPROM drivers where the buffering comprises a few bytes.
 
 # 2. Choice of interface

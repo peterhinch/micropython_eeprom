@@ -16,7 +16,7 @@ def get_device():
         Pin.board.EN_3V3.value(1)
     # Adjust to suit number of chips and their wiring.
     cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-    flash = FLASH(SPI(2, baudrate=5_000_000), cspins, size=32768)
+    flash = FLASH(SPI(2, baudrate=20_000_000), cspins, size=32768)
     print('Instantiated Flash')
     return flash
 
@@ -157,6 +157,3 @@ def full_test(count=10):
                     if g != data[n]:
                         print('{} {:2x} {:2x} {:2x}'.format(n, data[n], g, got1[n]))
             break
-
-# Fail seems to be on write: two readbacks are always identical.
-# Error is on MSB of byte 0: write a 1 and get 0

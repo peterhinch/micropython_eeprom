@@ -47,8 +47,9 @@ connected to 3V3 or left unconnected.
 | 8     |  Vcc    | 3V3 | 3V3    |
 
 For multiple chips a separate CS pin must be assigned to each chip: each one
-being wired to a single chip's CS line. Multiple chips should have 3V3, Gnd,
-SCL, MOSI and MISO lines wired in parallel.
+being wired to a single chip's CS line. The test program assumes a second chip
+with CS connected to Y4. Multiple chips should have 3V3, Gnd, SCL, MOSI and
+MISO lines wired in parallel.
 
 If you use a Pyboard D and power the chips from the 3V3 output you will need
 to enable the voltage rail by issuing:
@@ -72,8 +73,9 @@ Bus lines should be short and direct.
  3. `flash_test.py` Test programs for above.
  4. `littlefs_test.py` Torture test for the littlefs filesystem on the flash
  array. Requires `flash_test.py` which it uses for hardware configuration.
+ 5. `wemos_flash.py` Test program running on a Wemos D1 Mini ESP8266 board.
 
-Installation: copy files 1 and 2 (3 & 4 are optional) to the target filesystem.
+Installation: copy files 1 and 2 (3 - 5 are optional) to the target filesystem.
 The `flash_test` script assumes two S25FL256L chips connected to SPI(2) with
 CS/ pins wired to Pyboard pins Y4 and Y5. The `get_device` function may be
 adapted for other setups and is shared with `littlefs_test`.

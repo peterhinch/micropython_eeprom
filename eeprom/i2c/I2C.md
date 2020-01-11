@@ -26,18 +26,21 @@ the subsequent improvements to MicroPython to achieve these advantages:
 
 Any I2C interface may be used. The table below assumes a Pyboard running I2C(2)
 as per the test program. To wire up a single EEPROM chip, connect to a Pyboard
-as below. Pin numbers assume a PDIP package (8 pin plastic dual-in-line).
+or ESP8266 as below. Any ESP8266 pins may be used, those listed below are as
+used in the test program.
 
-| EEPROM |  PB |
-|:------:|:---:|
-| 1 A0   | Gnd |
-| 2 A1   | Gnd |
-| 3 A2   | Gnd |
-| 4 Vss  | Gnd |
-| 5 Sda  | Y10 |
-| 6 Scl  | Y9  |
-| 7 WPA1 | Gnd |
-| 8 Vcc  | 3V3 |
+EEPROM Pin numbers assume a PDIP package (8 pin plastic dual-in-line).
+
+| EEPROM |  PB | ESP8266 |
+|:------:|:---:|:-------:|
+| 1 A0   | Gnd |  Gnd    |
+| 2 A1   | Gnd |  Gnd    |
+| 3 A2   | Gnd |  Gnd    |
+| 4 Vss  | Gnd |  Gnd    |
+| 5 Sda  | Y10 |  12 D6  |
+| 6 Scl  | Y9  |  13 D7  |
+| 7 WPA1 | Gnd |  Gnd    |
+| 8 Vcc  | 3V3 |  3V3    |
 
 For multiple chips the address lines A0, A1 and A2 of each chip need to be
 wired to 3V3 in such a way as to give each device a unique address. These must
@@ -72,9 +75,11 @@ Other platforms may vary.
 
  1. `eeprom_i2c.py` Device driver.
  2. `bdevice.py` (In root directory) Base class for the device driver.
- 3. `eep_i2c.py` Test programs for above.
+ 3. `eep_i2c.py` Pyboard test programs for above.
+ 4. `wemos_i2c_eeprom.py` Test program using a Wemos D1 mini ESP8266 board.
 
-Installation: copy files 1 and 2 (optionally 3) to the target filesystem.
+Installation: copy files 1 and 2 (optionally 3 and/or 4) to the target
+filesystem.
 
 # 4. The device driver
 

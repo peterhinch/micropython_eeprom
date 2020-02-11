@@ -4,6 +4,7 @@
 # Copyright (c) 2019 Peter Hinch
 
 import uos
+import time
 from machine import SPI, Pin
 from eeprom_spi import EEPROM
 # Add extra pins if using multiple chips
@@ -13,6 +14,7 @@ cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=
 def get_eep(stm):
     if uos.uname().machine.split(' ')[0][:4] == 'PYBD':
         Pin.board.EN_3V3.value(1)
+        time.sleep(0.1)  # Allow decouplers to charge
     if stm:
         eep = EEPROM(SPI(2, baudrate=5_000_000), cspins, 256)
     else:

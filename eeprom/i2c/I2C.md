@@ -68,6 +68,7 @@ If you use a Pyboard D and power the EEPROMs from the 3V3 output you will need
 to enable the voltage rail by issuing:
 ```python
 machine.Pin.board.EN_3V3.value(1)
+time.sleep(0.1)  # Allow decouplers to charge
 ```
 Other platforms may vary.
 

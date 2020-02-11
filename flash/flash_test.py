@@ -4,19 +4,21 @@
 # Copyright (c) 2019 Peter Hinch
 
 import uos
+import time
 from machine import SPI, Pin
 from flash_spi import FLASH
 
 # **** ADAPT THIS FUNCTION ****
 
-# Return an EEPROM array. Adapt for platforms other than Pyboard, chip size and
-# baudrate.
+# Return an EEPROM array. Adapt for platforms other than Pyboard.
+# May want to set chip size and baudrate.
 def get_device():
     if uos.uname().machine.split(' ')[0][:4] == 'PYBD':
         Pin.board.EN_3V3.value(1)
+        time.sleep(0.1)
     # Adjust to suit number of chips and their wiring.
     cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-    flash = FLASH(SPI(2, baudrate=20_000_000), cspins, size=32768)
+    flash = FLASH(SPI(2, baudrate=20_000_000), cspins)
     print('Instantiated Flash')
     return flash
 

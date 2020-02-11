@@ -4,6 +4,7 @@
 # Copyright (c) 2019 Peter Hinch
 
 import uos
+import time
 from machine import I2C, Pin
 from fram_i2c import FRAM
 
@@ -11,6 +12,7 @@ from fram_i2c import FRAM
 def get_fram():
     if uos.uname().machine.split(' ')[0][:4] == 'PYBD':
         Pin.board.EN_3V3.value(1)
+        time.sleep(0.1)  # Allow decouplers to charge
     fram = FRAM(I2C(2))
     print('Instantiated FRAM')
     return fram

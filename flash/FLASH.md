@@ -59,6 +59,7 @@ If you use a Pyboard D and power the chips from the 3V3 output you will need
 to enable the voltage rail by issuing:
 ```python
 machine.Pin.board.EN_3V3.value(1)
+time.sleep(0.1)  # Allow decouplers to charge
 ```
 Other platforms may vary but the Cypress chips require a 3.3V supply.
 

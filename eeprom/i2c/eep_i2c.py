@@ -4,6 +4,7 @@
 # Copyright (c) 2019 Peter Hinch
 
 import uos
+import time
 from machine import I2C, Pin
 from eeprom_i2c import EEPROM, T24C512
 
@@ -12,6 +13,7 @@ from eeprom_i2c import EEPROM, T24C512
 def get_eep():
     if uos.uname().machine.split(' ')[0][:4] == 'PYBD':
         Pin.board.EN_3V3.value(1)
+        time.sleep(0.1)  # Allow decouplers to charge
     eep = EEPROM(I2C(2), T24C512)
     print('Instantiated EEPROM')
     return eep

@@ -1,7 +1,7 @@
 # flash_spi.py MicroPython driver for SPI NOR flash devices.
 
 # Released under the MIT License (MIT). See LICENSE.
-# Copyright (c) 2019 Peter Hinch
+# Copyright (c) 2019-2020 Peter Hinch
 
 import time
 from micropython import const
@@ -17,7 +17,6 @@ _CMDS4BA = b'\x13\x12\x21'
 # No address
 _WREN = const(6)  # Write enable
 _RDSR1 = const(5)  # Read status register 1
-_RDSR2 = const(7)  # Read status register 2
 _RDID = const(0x9f)  # Read manufacturer ID
 _CE = const(0xc7)  # Chip erase (takes minutes)
 
@@ -27,18 +26,19 @@ _SEC_SIZE = const(4096)  # Flash sector size 0x1000
 class FLASH(FlashDevice):
 
     def __init__(self, spi, cspins, size=None, verbose=True, sec_size=_SEC_SIZE, block_size=9):
-        # args: virtual block size in bits, no. of chips, bytes in each chip
         self._spi = spi
         self._cspins = cspins
         self._ccs = None  # Chip select Pin object for current chip
         self._bufp = bytearray(6)  # instruction + 4 byte address + 1 byte value
         self._mvp = memoryview(self._bufp)  # cost-free slicing
         self._page_size = 256  # Write uses 256 byte pages.
-        for cs in cspins:  # Ensure all chips are deselected
+        # Defensive code: application should have done the following.
+        # Pyboard D 3V3 output may just have been switched on.
+        for cs in cspins:  # Deselect all chips
             cs(1)
-        time.sleep_ms(1)  # Found necessary on fast hosts
+        time.sleep_ms(1)  # Meet Tpu 300μs
 
-        size = self.scan(verbose, size)
+        size = self.scan(verbose, size)  # KiB
         super().__init__(block_size, len(cspins), size * 1024, sec_size)
 
         # Select the correct command set
@@ -52,7 +52,7 @@ class FLASH(FlashDevice):
         self.initialise()  # Initially cache sector 0
 
     # **** API SPECIAL METHODS ****
-    # Scan: read manf ID
+    # Scan: return chip size in KiB as read from ID.
     def scan(self, verbose, size):
         mvp = self._mvp
         for n, cs in enumerate(self._cspins):
@@ -62,7 +62,7 @@ class FLASH(FlashDevice):
             self._spi.write_readinto(mvp[:4], mvp[:4])
             cs(1)
             scansize = 1 << (mvp[3] - 10)
-            if not size:
+            if size is None:
                 size = scansize
             if size != scansize:
                 raise ValueError('Flash size mismatch: expected {}KiB, found {}KiB'.format(size, scansize))
@@ -125,7 +125,6 @@ class FLASH(FlashDevice):
             self._spi.write(mvp[:self._cmdlen])
             self._spi.readinto(mvb[start : start + npage])
             cs(1)
-#            print('addr {} npage {} data {}'.format(addr, npage, mvb[start]))
             nbytes -= npage
             start += npage
             addr += npage

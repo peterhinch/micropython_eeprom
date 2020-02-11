@@ -1,7 +1,7 @@
 # 1. A MicroPython Flash memory driver
 
-This driver supports the Cypress S25FL256L and S25FL128L chips, providing 64MiB
-and 32MiB respectively. These have 100K cycles of write endurance (compared to
+This driver supports the Cypress S25FL256L and S25FL128L chips, providing 32MiB
+and 16MiB respectively. These have 100K cycles of write endurance (compared to
 10K for Pyboard Flash memory). These were the largest capacity available with a
 sector size small enough for microcontroller use.
 

@@ -34,6 +34,9 @@ class FLASH(FlashDevice):
         self._bufp = bytearray(6)  # instruction + 4 byte address + 1 byte value
         self._mvp = memoryview(self._bufp)  # cost-free slicing
         self._page_size = 256  # Write uses 256 byte pages.
+        for cs in cspins:  # Ensure all chips are deselected
+            cs(1)
+        time.sleep_ms(1)  # Found necessary on fast hosts
 
         size = self.scan(verbose, size)
         super().__init__(block_size, len(cspins), size * 1024, sec_size)

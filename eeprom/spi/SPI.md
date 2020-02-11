@@ -58,6 +58,10 @@ machine.Pin.board.EN_3V3.value(1)
 ```
 Other platforms may vary.
 
+It is wise to add a pullup resistor (say 10KΩ) from each CS/ line to 3.3V. This
+ensures that chips are deselected at initial power up when the microcontroller
+I/O pins are high impedance.
+
 ## 2.1 SPI Bus
 
 The Microchip devices support baudrates up to 20MHz. The STM chip has a maximum

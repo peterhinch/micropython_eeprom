@@ -5,6 +5,10 @@ and 32MiB respectively. These have 100K cycles of write endurance (compared to
 10K for Pyboard Flash memory). These were the largest capacity available with a
 sector size small enough for microcontroller use.
 
+Thanks to a patch from Daniel Thompson this now has the capability to support
+smaller NOR Flash chips with 24-bit addressing. I lack the chips to test this
+so am unable to support such use. The author tested on an XPX XT25F32B.
+
 Multiple chips may be used to construct a single logical nonvolatile memory
 module. The driver allows the memory either to be mounted in the target
 filesystem as a disk device or to be addressed as an array of bytes.
@@ -57,6 +61,10 @@ to enable the voltage rail by issuing:
 machine.Pin.board.EN_3V3.value(1)
 ```
 Other platforms may vary but the Cypress chips require a 3.3V supply.
+
+It is wise to add a pullup resistor (say 10KΩ) from each CS/ line to 3.3V. This
+ensures that chips are deselected at initial power up when the microcontroller
+I/O pins are high impedance.
 
 ## 2.1 SPI Bus
 
@@ -128,7 +136,10 @@ Arguments:
  1. `spi` Mandatory. An initialised SPI bus created by `machine`.
  2. `cspins` A list or tuple of `Pin` instances. Each `Pin` must be initialised
  as an output (`Pin.OUT`) and with `value=1` and be created by `machine`.
- 3. `size=16384` Chip size in KiB. Set to 32768 for the S25FL256L chip.
+ 3. `size=None` Chip size in KiB. The size is read from the chip. If a value
+ is passed, the actual size is compared with the passed value: a mismatch will
+ raise a `ValueError`. Optionally set to 32768 for the S25FL256L chip or 16384
+ for the S25FL128L.
  4. `verbose=True` If `True`, the constructor issues information on the flash
  devices it has detected.
  5. `sec_size=4096` Chip sector size.

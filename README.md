@@ -69,6 +69,8 @@ In the table below the Interface column includes page size in bytes.
 | Microchip    | 24xx64    | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Adafruit     | 1895      | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md)     |
 
+The flash driver now has the capability to support smaller chips.
+
 ## 1.5 Performance
 
 FRAM is truly byte-addressable: its speed is limited only by the speed of the

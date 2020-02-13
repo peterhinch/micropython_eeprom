@@ -63,8 +63,8 @@ class FLASH(FlashDevice):
             cs(1)
             scansize = 1 << (mvp[3] - 10)
             if size is None:
-                size = scansize
-            if size != scansize:
+                size = scansize  # Save size of 1st chip
+            if size != scansize:  # Mismatch passed size or 1st chip.
                 raise ValueError('Flash size mismatch: expected {}KiB, found {}KiB'.format(size, scansize))
         if verbose:
             s = '{} chips detected. Total flash size {}MiB.'
@@ -152,10 +152,16 @@ class FLASH(FlashDevice):
     # Given an address, set current chip select and address buffer.
     # Return the number of bytes that can be processed in the current chip.
     def _getaddr(self, addr, nbytes):
+#        print(hex(addr), hex(self._a_bytes), hex(self._c_bytes), self._nbits, self._block_size, divmod(addr, self._c_bytes))
         if addr >= self._a_bytes:
+#            print(hex(addr), hex(self._a_bytes), hex(self._c_bytes), self._nbits, self._block_size, divmod(addr, self._c_bytes))
             raise RuntimeError("Flash Address is out of range")
         ca, la = divmod(addr, self._c_bytes)  # ca == chip no, la == offset into chip
-        self._ccs = self._cspins[ca]  # Current chip select
+        try:
+            self._ccs = self._cspins[ca]  # Current chip select
+        except:
+            print(ca, la)
+            raise
         cmdlen = self._cmdlen
         mvp = self._mvp[:cmdlen]
         if cmdlen > 3:

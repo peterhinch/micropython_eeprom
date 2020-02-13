@@ -133,19 +133,25 @@ each chip select line a flash array is instantiated. A `RuntimeError` will be
 raised if a device is not detected on a CS line. The test has no effect on
 the array contents.
 
-Arguments:  
- 1. `spi` Mandatory. An initialised SPI bus created by `machine`.
+Arguments. In most cases only the first two mandatory args are required:  
+ 1. `spi` An initialised SPI bus created by `machine`.
  2. `cspins` A list or tuple of `Pin` instances. Each `Pin` must be initialised
  as an output (`Pin.OUT`) and with `value=1` and be created by `machine`.
  3. `size=None` Chip size in KiB. The size is read from the chip. If a value
  is passed, the actual size is compared with the passed value: a mismatch will
- raise a `ValueError`. Optionally set to 32768 for the S25FL256L chip or 16384
- for the S25FL128L.
+ raise a `ValueError`. A `ValueError` will also occur if chips in the array
+ have differing sizes. See table below for values.
  4. `verbose=True` If `True`, the constructor issues information on the flash
  devices it has detected.
  5. `sec_size=4096` Chip sector size.
  6. `block_size=9` The block size reported to the filesystem. The size in bytes
  is `2**block_size` so is 512 bytes by default.
+
+Size values:  
+| Chip      | Size  |
+|:---------:|:-----:|
+| S25FL256L | 32768 |
+| S25FL128L | 16384 |
 
 ### 4.1.2 Methods providing byte level access
 

@@ -57,19 +57,30 @@ M95M02-DRMN6TP and M95M02-DWMN3TP/K. The latter has a wider temperature range.
 
 In the table below the Interface column includes page size in bytes.  
 
-| Manufacturer | Part      | Interface | Bytes  | Technology | Docs                          |
-|:------------:|:---------:|:---------:|:------:|:----------:|:-----------------------------:|
-| Cypress      | S25FL256L | SPI 4096  |  32MiB |   Flash    | [FLASH.md](./flash/FLASH.md)  |
-| Cypress      | S25FL128L | SPI 4096  |  16MiB |   Flash    | [FLASH.md](./flash/FLASH.md)  |
-| STM          | M95M02-DR | SPI 256   | 256KiB |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
-| Microchip    | 25xx1024  | SPI 256   | 128KiB |   EEPROM   | [SPI.md](./eeprom/SPI.md)     |
-| Microchip    | 24xx512   | I2C 128   |  64KiB |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
-| Microchip    | 24xx256   | I2C 128   |  32KiB |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
-| Microchip    | 24xx128   | I2C 128   |  16KiB |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
-| Microchip    | 24xx64    | I2C 128   |   8KiB |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
-| Adafruit     | 1895      | I2C n/a   |  32KiB |   FRAM     | [FRAM.md](./fram/FRAM.md)     |
+| Manufacturer | Part      | Interface | Bytes   | Technology | Docs                          |
+|:------------:|:---------:|:---------:|:-------:|:----------:|:-----------------------------:|
+| Various      | Various   | SPI 4096  | <=32MiB |   Flash    | [FLASH.md](./flash/FLASH.md)  |
+| STM          | M95M02-DR | SPI 256   | 256KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
+| Microchip    | 25xx1024  | SPI 256   | 128KiB  |   EEPROM   | [SPI.md](./eeprom/SPI.md)     |
+| Microchip    | 24xx512   | I2C 128   |  64KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Microchip    | 24xx256   | I2C 128   |  32KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Microchip    | 24xx128   | I2C 128   |  16KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Microchip    | 24xx64    | I2C 128   |   8KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Adafruit     | 1895      | I2C n/a   |  32KiB  |   FRAM     | [FRAM.md](./fram/FRAM.md)     |
 
-The flash driver now has the capability to support smaller chips.
+The flash driver now has the capability to support a variety of chips. The
+following have been tested to date:
+
+| Chip              | Size (MiB) |
+|:-----------------:|:----------:|
+| Cypress S25FL256L | 32         |
+| Cypress S25FL128L | 16         |
+| Cypress S25FL064L |  8         |
+| Winbond W25Q32JV  |  4         |
+
+It is likely that other chips with 4096 byte blocks will work but I am unlikely
+to be able to support hardware I don't possess. Users should check datasheets
+for compatibility.
 
 ## 1.5 Performance
 

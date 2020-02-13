@@ -63,10 +63,7 @@ class BlockDevice:
         return
 
     def readblocks(self, blocknum, buf, offset=0):
-        if blocknum < 0 or (offset + (blocknum << self._nbits)) > self._a_bytes:
-            print('rb', hex(blocknum), offset, hex(offset + (blocknum << self._nbits)))
-        else:
-            self.readwrite(offset + (blocknum << self._nbits), buf, True)
+        self.readwrite(offset + (blocknum << self._nbits), buf, True)
 
     def writeblocks(self, blocknum, buf, offset=0):
         self.readwrite(offset + (blocknum << self._nbits), buf, False)

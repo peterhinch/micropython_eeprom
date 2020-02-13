@@ -1,13 +1,21 @@
 # 1. A MicroPython Flash memory driver
 
+## 1.1 Device support
+
 This driver supports the Cypress S25FL256L and S25FL128L chips, providing 32MiB
 and 16MiB respectively. These have 100K cycles of write endurance (compared to
 10K for Pyboard Flash memory). These were the largest capacity available with a
 sector size small enough for microcontroller use.
 
-Thanks to a patch from Daniel Thompson this now has the capability to support
-smaller NOR Flash chips with 24-bit addressing. I lack the chips to test this
-so am unable to support such use. The author tested on an XPX XT25F32B.
+Thanks to a patch from Daniel Thompson this now supports a variety of NOR Flash
+chips including those with 24-bit addressing. He tested an XPX XT25F32B; I
+tested Winbond W25Q32JV 4MiB and Cypress S25FL064L 8MiB devices.
+
+It is likely that other chips with 4096 byte blocks will work but I am unlikely
+to be able to support hardware I don't possess. Users should check datasheets
+for compatibility.
+
+## 1.2 The driver
 
 Multiple chips may be used to construct a single logical nonvolatile memory
 module. The driver allows the memory either to be mounted in the target
@@ -36,8 +44,8 @@ for facilitating effective hardware tests and for diagnostics.
 
 Any SPI interface may be used. The table below assumes a Pyboard running SPI(2)
 as per the test program. To wire up a single flash chip, connect to a Pyboard
-as below. Pin numbers an 8 pin SOIC or WSON package. Inputs marked `nc` may be
-connected to 3V3 or left unconnected.
+as below. Pin numbers relate to an 8 pin SOIC or WSON package. Inputs marked
+`nc` may be connected to 3V3 or left unconnected.
 
 | Flash | Signal  |  PB | Signal |
 |:-----:|:-------:|:---:|:------:|
@@ -50,7 +58,7 @@ connected to 3V3 or left unconnected.
 | 7     |  RESET/ | nc  | -      |
 | 8     |  Vcc    | 3V3 | 3V3    |
 
-For multiple chips a separate CS pin must be assigned to each chip: each one
+For multiple chips a separate CS pin must be assigned to each chip, each one
 being wired to a single chip's CS line. The test program assumes a second chip
 with CS connected to Y4. Multiple chips should have 3V3, Gnd, SCL, MOSI and
 MISO lines wired in parallel.
@@ -61,7 +69,7 @@ to enable the voltage rail by issuing:
 machine.Pin.board.EN_3V3.value(1)
 time.sleep(0.1)  # Allow decouplers to charge
 ```
-Other platforms may vary but the Cypress chips require a 3.3V supply.
+Other devices may vary but the Cypress chips require a 3.3V supply.
 
 It is wise to add a pullup resistor (say 10KΩ) from each CS/ line to 3.3V. This
 ensures that chips are deselected at initial power up when the microcontroller
@@ -85,9 +93,10 @@ Bus lines should be short and direct.
  5. `wemos_flash.py` Test program running on a Wemos D1 Mini ESP8266 board.
 
 Installation: copy files 1 and 2 (3 - 5 are optional) to the target filesystem.
-The `flash_test` script assumes two S25FL256L chips connected to SPI(2) with
-CS/ pins wired to Pyboard pins Y4 and Y5. The `get_device` function may be
-adapted for other setups and is shared with `littlefs_test`.
+The `flash_test` script assumes two chips connected to SPI(2) with CS/ pins
+wired to Pyboard pins Y4 and Y5. Device size is detected at runtime. The
+`get_device` function may be adapted for other setups and is shared with
+`littlefs_test`.
 
 For a quick check of hardware issue:
 ```python
@@ -140,18 +149,20 @@ Arguments. In most cases only the first two mandatory args are required:
  3. `size=None` Chip size in KiB. The size is read from the chip. If a value
  is passed, the actual size is compared with the passed value: a mismatch will
  raise a `ValueError`. A `ValueError` will also occur if chips in the array
- have differing sizes. See table below for values.
+ have differing sizes. See table below for values of chips tested to date.
  4. `verbose=True` If `True`, the constructor issues information on the flash
  devices it has detected.
  5. `sec_size=4096` Chip sector size.
  6. `block_size=9` The block size reported to the filesystem. The size in bytes
  is `2**block_size` so is 512 bytes by default.
 
-Size values:  
-| Chip      | Size  |
-|:---------:|:-----:|
-| S25FL256L | 32768 |
-| S25FL128L | 16384 |
+Size values (KiB):  
+| Chip              | Size  |
+|:-----------------:|:-----:|
+| Cypress S25FL256L | 32768 |
+| Cypress S25FL128L | 16384 |
+| Cypress S25FL064L | 8192  |
+| Winbond W25Q32JV  | 4096  |
 
 ### 4.1.2 Methods providing byte level access
 
@@ -195,8 +206,7 @@ print(flash[2000:2002])  # Returns a bytearray
 ```
 Three argument slices are not supported: a third arg (other than 1) will cause
 an exception. One argument slices (`flash[:5]` or `flash[13100:]`) and negative
-args are supported. See [section 4.2](./SPI.md#42-byte-addressing-usage-example)
-for a typical application.
+args are supported.
 
 #### 4.1.2.2 readwrite
 
@@ -224,13 +234,18 @@ where `flash` is the `FLASH` instance.
 
 #### scan
 
-Activate each chip select in turn checking for a valid device and returns the
-number of flash devices detected. A `RuntimeError` will be raised if any CS
-pin does not correspond to a valid chip.
+Args:
+ 1. `verbose` `bool`. If `True` print information on chips detected.
+ 2. `size` `int` or `None`. If an `int` is passed a `ValueError` is thrown if
+ the detected chip size does not match the passed value.
 
-Other than for debugging there is no need to call `scan()`: the constructor
-will throw a `RuntimeError` if it fails to communicate with and correctly
-identify each chip.
+Activate each chip select in turn checking for a valid device and returns the
+size in KiB of one instance of the flash devices detected. A `RuntimeError`
+will be raised if any CS pin does not correspond to a valid chip. A
+`ValueError` is thrown if the detected chips are not of the same size.
+
+Other than for debugging there is no need to call `scan()`: it is called by the
+constructor.
 
 #### erase
 
@@ -246,7 +261,7 @@ also [here](http://docs.micropython.org/en/latest/reference/filesystem.html#cust
 `writeblocks()`  
 `ioctl()`
 
-# 5. Test program flash_spi.py
+# 5. Test program flash_test.py
 
 This assumes a Pyboard 1.x or Pyboard D with two chips wired to SPI(2) as
 above with chip selects connected to pins `Y4` and `Y5`. It provides the

@@ -73,3 +73,5 @@ def main():
             print('Rewrote', n, length)
         check_all()
     remove_all()
+
+print('main() to run littlefs test. Filesystem must exist.')

@@ -159,3 +159,12 @@ def full_test(count=10):
                     if g != data[n]:
                         print('{} {:2x} {:2x} {:2x}'.format(n, data[n], g, got1[n]))
             break
+
+helpstr = '''Available tests:
+test()  Basic hardware test.
+full_test(count=10)  Full hardware test, count is no. of passes.
+fstest(format=False)  Check or create littlefs filesystem.
+cptest()  Copy 2 files to filesystem.
+cp()  Primitive copy routine. See docs.
+'''
+print(helpstr)

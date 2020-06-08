@@ -25,7 +25,8 @@ _SEC_SIZE = const(4096)  # Flash sector size 0x1000
 # Logical Flash device comprising one or more physical chips sharing an SPI bus.
 class FLASH(FlashDevice):
 
-    def __init__(self, spi, cspins, size=None, verbose=True, sec_size=_SEC_SIZE, block_size=9):
+    def __init__(self, spi, cspins, size=None, verbose=True,
+                 sec_size=_SEC_SIZE, block_size=9, cmdset=None):
         self._spi = spi
         self._cspins = cspins
         self._ccs = None  # Chip select Pin object for current chip
@@ -42,7 +43,7 @@ class FLASH(FlashDevice):
         super().__init__(block_size, len(cspins), size * 1024, sec_size)
 
         # Select the correct command set
-        if size <= 4096:
+        if (cmdset is None and size <= 4096) or (cmdset == False):
             self._cmds = _CMDS3BA
             self._cmdlen = 4
         else:

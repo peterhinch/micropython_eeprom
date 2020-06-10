@@ -155,11 +155,11 @@ Arguments. In most cases only the first two mandatory args are required:
  5. `sec_size=4096` Chip sector size.
  6. `block_size=9` The block size reported to the filesystem. The size in bytes
  is `2**block_size` so is 512 bytes by default.
- 7. `cmdset=None` Flash chips can support two low level command sets, an old 4
+ 7. `cmd5=None` Flash chips can support two low level command sets, an old 4
  byte set and a newer 5 byte set capable of supporting a larger address
  space. By default if the size read from the chip's ID is <= 4096KiB the 4 byte
  set is used oterwise the 5 byte set is adopted. This works for supported
- chips. Setting `cmdset` `True` forces 5 byte commands, `False` forces 4 byte.
+ chips. Setting `cmd5` `True` forces 5 byte commands, `False` forces 4 byte.
  This override is necessary for certain chip types (e.g. WinBond W25Q64FV).
 
 Size values (KiB):  

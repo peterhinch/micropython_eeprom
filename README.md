@@ -2,6 +2,8 @@
 
 These drivers support nonvolatile memory chips and the littlefs filesystem.
 
+Now includes support for 256 and 512KiB FRAM devices.
+
 Currently supported devices include technologies having superior performance
 compared to flash. Resultant storage has much higher write endurance. In some
 cases read and write access times may be shorter. EEPROM and FRAM chips have
@@ -66,6 +68,8 @@ In the table below the Interface column includes page size in bytes.
 | Microchip    | 24xx256   | I2C 128   |  32KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Microchip    | 24xx128   | I2C 128   |  16KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Microchip    | 24xx64    | I2C 128   |   8KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Adafruit     | 4719      | SPI n/a   | 512KiB  |   FRAM     | [FRAM_SPI.md](./fram/FRAM_SPI.md) |
+| Adafruit     | 4718      | SPI n/a   | 256KiB  |   FRAM     | [FRAM_SPI.md](./fram/FRAM_SPI.md) |
 | Adafruit     | 1895      | I2C n/a   |  32KiB  |   FRAM     | [FRAM.md](./fram/FRAM.md)     |
 
 The flash driver now has the capability to support a variety of chips. The
@@ -85,7 +89,7 @@ for compatibility.
 ## 1.5 Performance
 
 FRAM is truly byte-addressable: its speed is limited only by the speed of the
-I2C interface.
+I2C or SPI interface (SPI being much faster).
 
 Reading from EEPROM chips is fast. Writing is slower, typically around 5ms.
 However where multiple bytes are written, that 5ms applies to a page of data so

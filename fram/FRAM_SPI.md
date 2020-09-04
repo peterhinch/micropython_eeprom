@@ -64,8 +64,12 @@ at power-up.
  2. `bdevice.py` (In root directory) Base class for the device driver.
  3. `fram_spi_test.py` Test programs for above. Assumes two 512KiB boards with
  CS connected to pins Y4 and Y5 respectively. Adapt for other configurations.
+ 4. `fram_fs_test.py` A torture test for littlefs.
 
-Installation: copy files 1 and 2 (optionally 3) to the target filesystem.
+Installation: copy files 1 and 2 to the target filesystem. `fram_spi_test.py`
+has a function `test()` which provides quick verification of hardware, but
+`cspins` and `get_fram` at the start of the file may need adaptation to your
+hardware.
 
 # 4. The device driver
 

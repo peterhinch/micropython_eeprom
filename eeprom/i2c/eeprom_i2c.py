@@ -21,7 +21,7 @@ class EEPROM(BlockDevice):
     def __init__(self, i2c, chip_size=T24C512, verbose=True, block_size=9):
         self._i2c = i2c
         if chip_size not in (T24C64, T24C128, T24C256, T24C512):
-            raise RuntimeError('Invalid chip size', chip_size)
+            print('Warning: possible unsupported chip. Size:', chip_size)
         nchips = self.scan(verbose, chip_size)  # No. of EEPROM chips
         super().__init__(block_size, nchips, chip_size)
         self._i2c_addr = 0  # I2C address of current chip

@@ -86,6 +86,14 @@ It is likely that other chips with 4096 byte blocks will work but I am unlikely
 to be able to support hardware I don't possess. Users should check datasheets
 for compatibility.
 
+### 1.4.1 Chips tested by users
+
+If you have success with other chips please raise an issue and I will update
+this doc.
+
+CAT24C256LI-G I2C EEPROM 32KiB tested by
+[Julien Phalip](https://github.com/peterhinch/micropython_eeprom/issues/6#issuecomment-825801065).
+
 ## 1.5 Performance
 
 FRAM is truly byte-addressable: its speed is limited only by the speed of the

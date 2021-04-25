@@ -30,7 +30,7 @@ class EEPROM(BlockDevice):
     def __init__(self, spi, cspins, size=128, verbose=True, block_size=9):
         # args: virtual block size in bits, no. of chips, bytes in each chip
         if size not in (128, 256):
-            raise ValueError('Valid sizes are 128 or 256')
+            print('Warning: possible unsupported chip. Size:', size)
         super().__init__(block_size, len(cspins), size * 1024)
         self._stm = size == 256
         self._spi = spi

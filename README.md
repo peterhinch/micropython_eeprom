@@ -89,10 +89,16 @@ for compatibility.
 ### 1.4.1 Chips tested by users
 
 If you have success with other chips please raise an issue and I will update
-this doc.
+this doc. Please note the `cmd5` arg. It is essential to know whether a chip
+uses 4 or 5 byte commands and to set this correctly otherise very confusing
+behaviour results.
 
 CAT24C256LI-G I2C EEPROM 32KiB tested by
 [Julien Phalip](https://github.com/peterhinch/micropython_eeprom/issues/6#issuecomment-825801065).
+
+Winbond W25Q128JV Flash 128MiB tested by
+[mweber-bg](https://github.com/peterhinch/micropython_eeprom/issues/8#issuecomment-917603913).  
+This requires setting `cmd5=False`.
 
 ## 1.5 Performance
 

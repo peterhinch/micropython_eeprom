@@ -68,6 +68,7 @@ class BlockDevice:
     def writeblocks(self, blocknum, buf, offset=0):
         self.readwrite(offset + (blocknum << self._nbits), buf, False)
 
+    # https://docs.micropython.org/en/latest/library/os.html#os.AbstractBlockDev.ioctl
     def ioctl(self, op, arg):  # ioctl calls: see extmod/vfs.h
         if op == 3:  # SYNCHRONISE
             self.sync()
@@ -76,7 +77,7 @@ class BlockDevice:
             return self._a_bytes >> self._nbits
         if op == 5:  # BP_IOCTL_SEC_SIZE
             return self._block_size
-        if op == 6:  # ERASE
+        if op == 6:  # Ignore ERASE because handled by driver.
             return 0
 
 # Hardware agnostic base class for flash memory.

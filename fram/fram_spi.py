@@ -91,7 +91,8 @@ class FRAM(BlockDevice):
             #cs(1)
 
     # Given an address, set current chip select and address buffer.
-    # Return the number of bytes that can be processed in the current chip.
+    # Return the number of bytes that can be processed in the current page.
+    # Use of 256 byte pages may be unnecessary for FRAM but cost is minimal.
     def _getaddr(self, addr, nbytes):
         if addr >= self._a_bytes:
             raise RuntimeError("FRAM Address is out of range")
@@ -101,7 +102,7 @@ class FRAM(BlockDevice):
         mvp[1] = la >> 16
         mvp[2] = (la >> 8) & 0xff
         mvp[3] = la & 0xff
-        pe = (addr & ~0xff) + 0x100  # byte 0 of next chip
+        pe = (addr & ~0xff) + 0x100  # byte 0 of next page
         return min(nbytes, pe - la)
 
     # Interface to bdevice
@@ -111,7 +112,7 @@ class FRAM(BlockDevice):
         mvp = self._mvp
         start = 0  # Offset into buf.
         while nbytes > 0:
-            npage = self._getaddr(addr, nbytes)  # No of bytes that fit on current chip
+            npage = self._getaddr(addr, nbytes)  # No of bytes that fit on current page
             cs = self._ccs
             if read:
                 mvp[0] = _READ

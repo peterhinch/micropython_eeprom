@@ -1,22 +1,22 @@
 # 1. A MicroPython SPI FRAM driver
 
-A driver to enable the Pyboard to access Ferroelectric RAM (FRAM) boards from
-Adafruit, namely [the 256KiB board](https://www.adafruit.com/product/4718) and
-[the 512KiB board](https://www.adafruit.com/product/4719). FRAM is a technology
-offering nonvolatile memory with extremely long endurance and fast access,
-avoiding the
-limitations of Flash memory. Its endurance is specified as 10**13 writes,
-contrasted with 10,000 which is the quoted endurance of the Pyboard's onboard
-Flash memory. In data logging applications the latter can be exceeded relatively
-rapidly. Flash writes can be slow because of the need for a sector erase: this
-is not a fast process. FRAM is byte addressable and is not subject to this
-limitation. Compared to a Micro SD card fitted to the Pyboard it offers lower
-power consumption and longer endurance, albeit at a smaller capacity.
+A driver to enable MicroPython hosts to access Ferroelectric RAM (FRAM) boards
+from Adafruit, namely [the 256KiB board](https://www.adafruit.com/product/4718)
+and [the 512KiB board](https://www.adafruit.com/product/4719). FRAM is a
+technology offering nonvolatile memory with extremely long endurance and fast
+access, avoiding the limitations of Flash memory. Its endurance is specified as
+10**13 writes, contrasted with 10,000 which is the quoted endurance of the
+Pyboard's onboard Flash memory. In data logging applications the latter can be
+exceeded relatively rapidly. Flash writes can be slow because of the need for a
+sector erase: this is not a fast process. FRAM is byte addressable and is not
+subject to this limitation. Compared to a Micro SD card fitted to the Pyboard
+it offers lower power consumption and longer endurance, albeit at a smaller
+capacity.
 
 An arbitrary number of boards may be used to construct a nonvolatile memory
 array with size from 256KiB upwards. The driver allows the memory either to be
-mounted in the Pyboard filesystem as a disk device or to be addressed as an
-array of bytes.
+mounted in the host filesystem as a disk device or to be addressed as an array
+of bytes.
 
 For users interested in the technology [this](https://www.mouser.com/pdfDOCS/cypress-fram-whitepaper.pdf)
 is worth reading. Clue: the FRAM cell contains no iron.
@@ -45,7 +45,7 @@ For multiple boards a separate CS pin must be assigned to each one: each pin
 must be wired to a single board's CS line. Multiple boards should have Vin, Gnd,
 SCK, MOSI and MISO lines wired in parallel.
 
-If you use a Pyboard D and power the devicess from the 3V3 output you will need
+If you use a Pyboard D and power the devices from the 3V3 output you will need
 to enable the voltage rail by issuing:
 ```python
 machine.Pin.board.EN_3V3.value(1)
@@ -226,8 +226,8 @@ mounted on /fram):
 cp('/flash/main.py','/fram/')
 ```
 
-See `upysh` in [micropython-lib](https://github.com/micropython/micropython-lib.git)
-for other filesystem tools for use at the REPL.
+See `upysh` in [micropython-lib](https://github.com/micropython/micropython-lib/tree/master/micropython/upysh)
+for more fully developed filesystem tools for use at the REPL.
 
 # 6. Low power operation
 
@@ -238,8 +238,8 @@ requirement.
 
 # 7. References
 
-[256KiB Adafruit board](http://www.adafruit.com/product/4718)
-[512KiB Adafruit board](http://www.adafruit.com/product/4719)
-[256KiB Chip datasheet](https://cdn-shop.adafruit.com/product-files/4718/4718_MB85RS2MTA.pdf)
-[512KiB Chip datasheet](https://cdn-shop.adafruit.com/product-files/4719/4719_MB85RS4MT.pdf)
-[Technology](https://www.mouser.com/pdfDOCS/cypress-fram-whitepaper.pdf)
+[256KiB Adafruit board](http://www.adafruit.com/product/4718)  
+[512KiB Adafruit board](http://www.adafruit.com/product/4719)  
+[256KiB Chip datasheet](https://cdn-shop.adafruit.com/product-files/4718/4718_MB85RS2MTA.pdf)  
+[512KiB Chip datasheet](https://cdn-shop.adafruit.com/product-files/4719/4719_MB85RS4MT.pdf)  
+[Technology](https://www.mouser.com/pdfDOCS/cypress-fram-whitepaper.pdf)  

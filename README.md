@@ -2,7 +2,7 @@
 
 These drivers support nonvolatile memory chips and the littlefs filesystem.
 
-Now includes support for 256 and 512KiB FRAM devices.
+Now includes support for 256 and 512KiB FRAM devices and 8MiB PSRAM chips.
 
 Currently supported devices include technologies having superior performance
 compared to flash. Resultant storage has much higher write endurance. In some
@@ -28,15 +28,18 @@ The drivers have the following common features:
 
 ## 1.2 Technologies
 
-Currently supported technologies are Flash, EEPROM and FRAM (ferroelectric
-RAM). The latter two are nonvolatile random access storage devices with much
-higher endurance than flash memory. Flash has a typical endurance of 10-100K
-writes per page. The figures for EEPROM and FRAM are 1-4M and 10^12 writes
-respectively. In the case of the FAT filing system 1M page writes probably
-corresponds to 1M filesystem writes because FAT repeatedly updates the
-allocation tables in the low numbered sectors. Under `littlefs` I would expect
-the endurance to be substantially better owing to its wear levelling
-architecture; over-provisioning should enhance this.
+Currently supported technologies are SPIRAM (PSRAM), Flash, EEPROM, and FRAM
+(ferroelectric RAM). The latter two are nonvolatile random access storage
+devices with much higher endurance than flash memory. Flash has a typical
+endurance of 10-100K writes per page. The figures for EEPROM and FRAM are 1-4M
+and 10^12 writes respectively. In the case of the FAT filing system 1M page
+writes probably corresponds to 1M filesystem writes because FAT repeatedly
+updates the allocation tables in the low numbered sectors. Under `littlefs` I
+would expect the endurance to be substantially better owing to its wear
+levelling architecture; over-provisioning should enhance this.
+
+SPIRAM has huge capacity and effectively infinite endurance. Unlike the other
+technologies it is volatile: contents are lost after a power cycle.
 
 ## 1.3 Organisation of this repo
 
@@ -71,6 +74,9 @@ In the table below the Interface column includes page size in bytes.
 | Adafruit     | 4719      | SPI n/a   | 512KiB  |   FRAM     | [FRAM_SPI.md](./fram/FRAM_SPI.md) |
 | Adafruit     | 4718      | SPI n/a   | 256KiB  |   FRAM     | [FRAM_SPI.md](./fram/FRAM_SPI.md) |
 | Adafruit     | 1895      | I2C n/a   |  32KiB  |   FRAM     | [FRAM.md](./fram/FRAM.md)     |
+| Adafruit     | 4677      | SPI n/a   |   8MiB  |   SPIRAM   | [SPIRAM.md](./spiram/SPIRAM.md) |
+
+The SPIRAM chip is equivalent to Espressif ESP-PSRAM64H.
 
 The flash driver now has the capability to support a variety of chips. The
 following have been tested to date:
@@ -102,8 +108,8 @@ This requires setting `cmd5=False`.
 
 ## 1.5 Performance
 
-FRAM is truly byte-addressable: its speed is limited only by the speed of the
-I2C or SPI interface (SPI being much faster).
+FRAM and SPIRAM are truly byte-addressable: speed is limited only by the speed
+of the I2C or SPI interface (SPI being much faster).
 
 Reading from EEPROM chips is fast. Writing is slower, typically around 5ms.
 However where multiple bytes are written, that 5ms applies to a page of data so
@@ -139,7 +145,7 @@ The larger capacity chips generally use SPI.
 A key aim of these drivers is support for littlefs. This requires the extended
 block device protocol as described
 [here](http://docs.micropython.org/en/latest/reference/filesystem.html) and
-[in the uos doc](http://docs.micropython.org/en/latest/library/uos.html).
+[in the uos doc](http://docs.micropython.org/en/latest/library/os.html).
 This protocol describes a block structured API capable of handling offsets into
 the block. It is therefore necessary for the device driver to deal with any
 block structuring inherent in the hardware. The device driver must enable

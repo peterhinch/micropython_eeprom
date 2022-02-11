@@ -66,7 +66,7 @@ In the table below the Interface column includes page size in bytes.
 |:------------:|:---------:|:---------:|:-------:|:----------:|:-----------------------------:|
 | Various      | Various   | SPI 4096  | <=32MiB |   Flash    | [FLASH.md](./flash/FLASH.md)  |
 | STM          | M95M02-DR | SPI 256   | 256KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
-| Microchip    | 25xx1024  | SPI 256   | 128KiB  |   EEPROM   | [SPI.md](./eeprom/SPI.md)     |
+| Microchip    | 25xx1024  | SPI 256   | 128KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
 | Microchip    | 24xx512   | I2C 128   |  64KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Microchip    | 24xx256   | I2C 128   |  32KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Microchip    | 24xx128   | I2C 128   |  16KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |

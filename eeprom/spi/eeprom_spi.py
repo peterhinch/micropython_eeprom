@@ -1,8 +1,8 @@
-# eeprom_spi.py MicroPython driver for Microchip 128KiB SPI EEPROM device,
-# also STM 256KiB chip.
+# eeprom_spi.py MicroPython driver for EEPROM chips (see README.md for
+# tested devices).
 
 # Released under the MIT License (MIT). See LICENSE.
-# Copyright (c) 2019 Peter Hinch
+# Copyright (c) 2019-2022 Peter Hinch
 
 import time
 from micropython import const
@@ -29,7 +29,7 @@ class EEPROM(BlockDevice):
 
     def __init__(self, spi, cspins, size=128, verbose=True, block_size=9):
         # args: virtual block size in bits, no. of chips, bytes in each chip
-        if size not in (128, 256):
+        if size not in (64, 128, 256):
             print('Warning: possible unsupported chip. Size:', size)
         super().__init__(block_size, len(cspins), size * 1024)
         self._stm = size == 256

@@ -67,6 +67,7 @@ In the table below the Interface column includes page size in bytes.
 | Various      | Various   | SPI 4096  | <=32MiB |   Flash    | [FLASH.md](./flash/FLASH.md)  |
 | STM          | M95M02-DR | SPI 256   | 256KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
 | Microchip    | 25xx1024  | SPI 256   | 128KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
+| Microchip    | 25xx512*  | SPI 256   |  64KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
 | Microchip    | 24xx512   | I2C 128   |  64KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Microchip    | 24xx256   | I2C 128   |  32KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Microchip    | 24xx128   | I2C 128   |  16KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
@@ -76,6 +77,7 @@ In the table below the Interface column includes page size in bytes.
 | Adafruit     | 1895      | I2C n/a   |  32KiB  |   FRAM     | [FRAM.md](./fram/FRAM.md)     |
 | Adafruit     | 4677      | SPI n/a   |   8MiB  |   SPIRAM   | [SPIRAM.md](./spiram/SPIRAM.md) |
 
+Parts marked * have been tested by users (see below).  
 The SPIRAM chip is equivalent to Espressif ESP-PSRAM64H.
 
 The flash driver now has the capability to support a variety of chips. The
@@ -87,6 +89,7 @@ following have been tested to date:
 | Cypress S25FL128L | 16         |
 | Cypress S25FL064L |  8         |
 | Winbond W25Q32JV  |  4         |
+
 
 It is likely that other chips with 4096 byte blocks will work but I am unlikely
 to be able to support hardware I don't possess. Users should check datasheets
@@ -105,6 +108,9 @@ CAT24C256LI-G I2C EEPROM 32KiB tested by
 Winbond W25Q128JV Flash 128MiB tested by
 [mweber-bg](https://github.com/peterhinch/micropython_eeprom/issues/8#issuecomment-917603913).  
 This requires setting `cmd5=False`.
+
+Microchip 25LC512 SPI EEPROM 64KiB tested by
+[ph1lj-6321](https://github.com/peterhinch/micropython_eeprom/issues/10).
 
 ## 1.5 Performance
 

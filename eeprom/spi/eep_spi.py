@@ -1,7 +1,7 @@
 # eep_spi.py MicroPython test program for Microchip SPI EEPROM devices.
 
 # Released under the MIT License (MIT). See LICENSE.
-# Copyright (c) 2019 Peter Hinch
+# Copyright (c) 2019-2022 Peter Hinch
 
 import uos
 import time
@@ -149,3 +149,11 @@ def full_test(stm=False):
             print('Page {} readback failed.'.format(page))
             break
         page += 1
+
+test_str = """Available tests (see SPI.md):
+test(stm=False)  Basic hardware test.
+full_test(stm=False)  Thorough hardware test.
+fstest(format=False, stm=False)  Filesystem test (see doc).
+cptest(stm=False)  Copy files to filesystem (see doc).
+"""
+print(test_str)

@@ -1,8 +1,7 @@
-# 1. MicroPython drivers for nonvolatile memory
+# 1. MicroPython drivers for memory chips
 
-These drivers support nonvolatile memory chips and the littlefs filesystem.
-
-Now includes support for 256 and 512KiB FRAM devices and 8MiB PSRAM chips.
+These drivers support either byte level access or the littlefs filesystem.
+Supported technologies are Flash, EEPROM, FRAM and SPIRAM.
 
 Currently supported devices include technologies having superior performance
 compared to flash. Resultant storage has much higher write endurance. In some
@@ -47,6 +46,11 @@ The directory structure is `technology/interface` where supported chips for a
 given technology offer SPI and I2C interfaces; where only one interface exists
 the `interface` subdirectory is omitted. The file `bdevice.py` is common to all
 drivers and is in the root directory.
+
+The link in the table below points to the docs relevant to the specific chip.
+In that directory may be found test scripts which may need minor adaptation for
+the host and interface in use. It is recommended to run these to verify the
+hardware configuration.
 
 ## 1.4 Supported chips
 

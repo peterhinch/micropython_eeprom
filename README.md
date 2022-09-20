@@ -66,20 +66,21 @@ M95M02-DRMN6TP and M95M02-DWMN3TP/K. The latter has a wider temperature range.
 
 In the table below the Interface column includes page size in bytes.  
 
-| Manufacturer | Part      | Interface | Bytes   | Technology | Docs                          |
-|:------------:|:---------:|:---------:|:-------:|:----------:|:-----------------------------:|
-| Various      | Various   | SPI 4096  | <=32MiB |   Flash    | [FLASH.md](./flash/FLASH.md)  |
-| STM          | M95M02-DR | SPI 256   | 256KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
-| Microchip    | 25xx1024  | SPI 256   | 128KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
-| Microchip    | 25xx512*  | SPI 256   |  64KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
-| Microchip    | 24xx512   | I2C 128   |  64KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
-| Microchip    | 24xx256   | I2C 128   |  32KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
-| Microchip    | 24xx128   | I2C 128   |  16KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
-| Microchip    | 24xx64    | I2C 128   |   8KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
-| Adafruit     | 4719      | SPI n/a   | 512KiB  |   FRAM     | [FRAM_SPI.md](./fram/FRAM_SPI.md) |
-| Adafruit     | 4718      | SPI n/a   | 256KiB  |   FRAM     | [FRAM_SPI.md](./fram/FRAM_SPI.md) |
-| Adafruit     | 1895      | I2C n/a   |  32KiB  |   FRAM     | [FRAM.md](./fram/FRAM.md)     |
-| Adafruit     | 4677      | SPI n/a   |   8MiB  |   SPIRAM   | [SPIRAM.md](./spiram/SPIRAM.md) |
+| Manufacturer | Part      | Interface | Bytes   | Technology | Docs                              |
+|:------------:|:----------|:----------|:--------|:-----------|:----------------------------------|
+| Various      | Various   | SPI 4096  | <=32MiB | Flash      | [FLASH.md](./flash/FLASH.md)      |
+| STM          | M95M02-DR | SPI 256   | 256KiB  | EEPROM     | [SPI.md](./eeprom/spi/SPI.md)     |
+| Microchip    | 25xx1024  | SPI 256   | 128KiB  | EEPROM     | [SPI.md](./eeprom/spi/SPI.md)     |
+| Microchip    | 25xx512*  | SPI 256   | 64KiB   | EEPROM     | [SPI.md](./eeprom/spi/SPI.md)     |
+| Microchip    | 24xx512   | I2C 128   | 64KiB   | EEPROM     | [I2C.md](./eeprom/i2c/I2C.md)     |
+| Microchip    | 24xx256   | I2C 128   | 32KiB   | EEPROM     | [I2C.md](./eeprom/i2c/I2C.md)     |
+| Microchip    | 24xx128   | I2C 128   | 16KiB   | EEPROM     | [I2C.md](./eeprom/i2c/I2C.md)     |
+| Microchip    | 24xx64    | I2C 128   | 8KiB    | EEPROM     | [I2C.md](./eeprom/i2c/I2C.md)     |
+| Microchip    | 24xx32    | I2C 32    | 4KiB    | EEPROM     | [I2C.md](./eeprom/i2c/I2C.md)     |
+| Adafruit     | 4719      | SPI n/a   | 512KiB  | FRAM       | [FRAM_SPI.md](./fram/FRAM_SPI.md) |
+| Adafruit     | 4718      | SPI n/a   | 256KiB  | FRAM       | [FRAM_SPI.md](./fram/FRAM_SPI.md) |
+| Adafruit     | 1895      | I2C n/a   | 32KiB   | FRAM       | [FRAM.md](./fram/FRAM.md)         |
+| Adafruit     | 4677      | SPI n/a   | 8MiB    | SPIRAM     | [SPIRAM.md](./spiram/SPIRAM.md)   |
 
 Parts marked * have been tested by users (see below).  
 The SPIRAM chip is equivalent to Espressif ESP-PSRAM64H.

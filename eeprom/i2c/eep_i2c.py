@@ -8,27 +8,31 @@ import time
 from machine import I2C, Pin
 from eeprom_i2c import EEPROM, T24C512
 
+
 # Return an EEPROM array. Adapt for platforms other than Pyboard or chips
 # smaller than 64KiB.
 def get_eep():
     if uos.uname().machine.split(' ')[0][:4] == 'PYBD':
         Pin.board.EN_3V3.value(1)
         time.sleep(0.1)  # Allow decouplers to charge
+
     eep = EEPROM(I2C(2), T24C512)
     print('Instantiated EEPROM')
     return eep
+
 
 # Dumb file copy utility to help with managing EEPROM contents at the REPL.
 def cp(source, dest):
     if dest.endswith('/'):  # minimal way to allow
         dest = ''.join((dest, source.split('/')[-1]))  # cp /sd/file /eeprom/
     with open(source, 'rb') as infile:  # Caller should handle any OSError
-        with open(dest,'wb') as outfile:  # e.g file not found
+        with open(dest, 'wb') as outfile:  # e.g file not found
             while True:
                 buf = infile.read(100)
                 outfile.write(buf)
                 if len(buf) < 100:
                     break
+
 
 # ***** TEST OF DRIVER *****
 def _testblock(eep, bs):
@@ -38,27 +42,29 @@ def _testblock(eep, bs):
     garbage = b'xxxxxxxxxxxxxxxxxxx'
     start = bs - len(d0)
     end = start + len(garbage)
-    eep[start : end] = garbage
-    res = eep[start : end]
+    eep[start: end] = garbage
+    res = eep[start: end]
     if res != garbage:
         return 'Block test fail 1:' + str(list(res))
     end = start + len(d0)
-    eep[start : end] = d0
+    eep[start: end] = d0
     end = start + len(garbage)
-    res = eep[start : end]
+    res = eep[start: end]
     if res != b'this >xxxxxxxxxxxxx':
         return 'Block test fail 2:' + str(list(res))
     start = bs
     end = bs + len(d1)
-    eep[start : end] = d1
+    eep[start: end] = d1
     start = bs - len(d0)
     end = start + len(d2)
-    res = eep[start : end]
+    res = eep[start: end]
     if res != d2:
         return 'Block test fail 3:' + str(list(res))
 
-def test():
-    eep = get_eep()
+
+def test(eep = None):
+    eep = eep if eep else get_eep()
+
     sa = 1000
     for v in range(256):
         eep[sa + v] = v
@@ -92,9 +98,10 @@ def test():
     else:
         print('Test chip boundary skipped: only one chip!')
 
+
 # ***** TEST OF FILESYSTEM MOUNT *****
-def fstest(format=False):
-    eep = get_eep()
+def fstest(eep = None, format=False):
+    eep = eep if eep else get_eep()
     try:
         uos.umount('/eeprom')
     except OSError:
@@ -107,15 +114,17 @@ def fstest(format=False):
         uos.VfsLfs2.mkfs(eep)
     # General
     try:
-        uos.mount(eep,'/eeprom')
+        uos.mount(eep, '/eeprom')
     except OSError:
         raise OSError("Can't mount device: have you formatted it?")
     print('Contents of "/": {}'.format(uos.listdir('/')))
     print('Contents of "/eeprom": {}'.format(uos.listdir('/eeprom')))
     print(uos.statvfs('/eeprom'))
 
-def cptest():  # Assumes pre-existing filesystem of either type
-    eep = get_eep()
+
+def cptest(eep = None):  # Assumes pre-existing filesystem of either type
+    eep = eep if eep else get_eep()
+
     if 'eeprom' in uos.listdir('/'):
         print('Device already mounted.')
     else:
@@ -130,14 +139,16 @@ def cptest():  # Assumes pre-existing filesystem of either type
     print('Contents of "/eeprom": {}'.format(uos.listdir('/eeprom')))
     print(uos.statvfs('/eeprom'))
 
+
 # ***** TEST OF HARDWARE *****
-def full_test():
-    eep = get_eep()
+def full_test(eep = None, block_size = 128):
+    eep = eep if eep else get_eep()
     page = 0
-    for sa in range(0, len(eep), 128):
-        data = uos.urandom(128)
-        eep[sa:sa + 128] = data
-        if eep[sa:sa + 128] == data:
+
+    for sa in range(0, len(eep), block_size):
+        data = uos.urandom(block_size)
+        eep[sa:sa + block_size] = data
+        if eep[sa:sa + block_size] == data:
             print('Page {} passed'.format(page))
         else:
             print('Page {} readback failed.'.format(page))

@@ -17,11 +17,10 @@ T24C64 = const(8192)  # 8KiB 64Kbits
 # Logical EEPROM device consists of 1-8 physical chips. Chips must all be the
 # same size, and must have contiguous addresses starting from 0x50.
 class EEPROM(BlockDevice):
-
     def __init__(self, i2c, chip_size=T24C512, verbose=True, block_size=9):
         self._i2c = i2c
         if chip_size not in (T24C64, T24C128, T24C256, T24C512):
-            print('Warning: possible unsupported chip. Size:', chip_size)
+            print("Warning: possible unsupported chip. Size:", chip_size)
         nchips = self.scan(verbose, chip_size)  # No. of EEPROM chips
         super().__init__(block_size, nchips, chip_size)
         self._i2c_addr = 0  # I2C address of current chip
@@ -34,11 +33,11 @@ class EEPROM(BlockDevice):
         eeproms = [d for d in devices if _ADDR <= d < _ADDR + 8]  # EEPROM chips
         nchips = len(eeproms)
         if nchips == 0:
-            raise RuntimeError('EEPROM not found.')
+            raise RuntimeError("EEPROM not found.")
         if min(eeproms) != _ADDR or (max(eeproms) - _ADDR) >= nchips:
-            raise RuntimeError('Non-contiguous chip addresses', eeproms)
+            raise RuntimeError("Non-contiguous chip addresses", eeproms)
         if verbose:
-            s = '{} chips detected. Total EEPROM size {}bytes.'
+            s = "{} chips detected. Total EEPROM size {}bytes."
             print(s.format(nchips, chip_size * nchips))
         return nchips
 
@@ -59,10 +58,10 @@ class EEPROM(BlockDevice):
         if addr >= self._a_bytes:
             raise RuntimeError("EEPROM Address is out of range")
         ca, la = divmod(addr, self._c_bytes)  # ca == chip no, la == offset into chip
-        self._addrbuf[0] = (la >> 8) & 0xff
-        self._addrbuf[1] = la & 0xff
+        self._addrbuf[0] = (la >> 8) & 0xFF
+        self._addrbuf[1] = la & 0xFF
         self._i2c_addr = _ADDR + ca
-        pe = (addr & ~0x7f) + 0x80  # byte 0 of next page
+        pe = (addr & ~0x7F) + 0x80  # byte 0 of next page
         return min(nbytes, pe - la)
 
     # Read or write multiple bytes at an arbitrary address
@@ -77,7 +76,9 @@ class EEPROM(BlockDevice):
                 self._i2c.writeto(self._i2c_addr, self._addrbuf)
                 self._i2c.readfrom_into(self._i2c_addr, mvb[start : start + npage])
             else:
-                self._i2c.writevto(self._i2c_addr, (self._addrbuf, buf[start: start + npage]))
+                self._i2c.writevto(
+                    self._i2c_addr, (self._addrbuf, buf[start : start + npage])
+                )
                 self._wait_rdy()
             nbytes -= npage
             start += npage

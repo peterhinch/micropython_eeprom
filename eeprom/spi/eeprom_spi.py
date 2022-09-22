@@ -14,8 +14,8 @@ _WRITE = const(2)
 _WREN = const(6)  # Write enable
 _RDSR = const(5)  # Read status register
 # Microchip only:
-_RDID = const(0xab)  # Read chip ID
-_CE = const(0xc7)  # Chip erase
+_RDID = const(0xAB)  # Read chip ID
+_CE = const(0xC7)  # Chip erase
 # STM only:
 _RDID_STM = const(0x83)  # Read ID page
 _WRID_STM = const(0x82)
@@ -26,11 +26,10 @@ _STM_ID = const(0x30)  # Arbitrary ID for STM chip
 
 # Logical EEPROM device comprising one or more physical chips sharing an SPI bus.
 class EEPROM(BlockDevice):
-
     def __init__(self, spi, cspins, size=128, verbose=True, block_size=9):
         # args: virtual block size in bits, no. of chips, bytes in each chip
         if size not in (64, 128, 256):
-            print('Warning: possible unsupported chip. Size:', size)
+            print("Warning: possible unsupported chip. Size:", size)
         super().__init__(block_size, len(cspins), size * 1024)
         self._stm = size == 256
         self._spi = spi
@@ -44,7 +43,7 @@ class EEPROM(BlockDevice):
     def _stm_rdid(self, n):
         cs = self._cspins[n]
         mvp = self._mvp
-        mvp[:] = b'\0\0\0\0\0'
+        mvp[:] = b"\0\0\0\0\0"
         mvp[0] = _RDID_STM
         cs(0)
         self._spi.write_readinto(mvp, mvp)
@@ -59,7 +58,7 @@ class EEPROM(BlockDevice):
         cs(0)
         self._spi.write(mvp[:1])  # Enable write
         cs(1)
-        mvp[:] = b'\0\0\0\0\0'
+        mvp[:] = b"\0\0\0\0\0"
         mvp[0] = _WRID_STM
         mvp[4] = _STM_ID
         cs(0)
@@ -74,32 +73,32 @@ class EEPROM(BlockDevice):
             if self._stm_rdid(n) != _STM_ID:
                 self._stm_wrid(n)
             if self._stm_rdid(n) != _STM_ID:
-                raise RuntimeError('M95M02 chip not found at cs[{}].'.format(n))
+                raise RuntimeError("M95M02 chip not found at cs[{}].".format(n))
         return n
 
     # Scan for Microchip devices: read manf ID
     def _mc_scan(self):
         mvp = self._mvp
         for n, cs in enumerate(self._cspins):
-            mvp[:] = b'\0\0\0\0\0'
+            mvp[:] = b"\0\0\0\0\0"
             mvp[0] = _RDID
             cs(0)
             self._spi.write_readinto(mvp, mvp)
             cs(1)
             if mvp[4] != 0x29:
-                raise RuntimeError('25xx1024 chip not found at cs[{}].'.format(n))
+                raise RuntimeError("25xx1024 chip not found at cs[{}].".format(n))
         return n
 
     # Check for a valid hardware configuration
     def scan(self, verbose):
         n = self._stm_scan() if self._stm else self._mc_scan()
         if verbose:
-            s = '{} chips detected. Total EEPROM size {}bytes.'
+            s = "{} chips detected. Total EEPROM size {}bytes."
             print(s.format(n + 1, self._a_bytes))
 
     def erase(self):
         if self._stm:
-            raise RuntimeError('Erase not available on STM chip')
+            raise RuntimeError("Erase not available on STM chip")
         mvp = self._mvp
         for cs in self._cspins:  # For each chip
             mvp[0] = _WREN
@@ -133,9 +132,9 @@ class EEPROM(BlockDevice):
         self._ccs = self._cspins[ca]  # Current chip select
         mvp = self._mvp
         mvp[1] = la >> 16
-        mvp[2] = (la >> 8) & 0xff
-        mvp[3] = la & 0xff
-        pe = (addr & ~0xff) + 0x100  # byte 0 of next page
+        mvp[2] = (la >> 8) & 0xFF
+        mvp[3] = la & 0xFF
+        pe = (addr & ~0xFF) + 0x100  # byte 0 of next page
         return min(nbytes, pe - la)
 
     # Read or write multiple bytes at an arbitrary address
@@ -162,7 +161,7 @@ class EEPROM(BlockDevice):
                 mvp[0] = _WRITE
                 cs(0)
                 self._spi.write(mvp[:4])
-                self._spi.write(mvb[start: start + npage])
+                self._spi.write(mvb[start : start + npage])
                 cs(1)  # Trigger write start
                 self._wait_rdy()  # Wait until done (6ms max)
             nbytes -= npage

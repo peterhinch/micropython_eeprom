@@ -10,6 +10,7 @@
 
 from micropython import const
 from bdevice import BlockDevice
+
 # import time  # for sleep command
 
 # Command set
@@ -19,15 +20,15 @@ _RDSR = const(5)  # Read status reg
 _WRSR = const(1)
 _READ = const(3)
 _WRITE = const(2)
-_RDID = const(0x9f)
+_RDID = const(0x9F)
 # _FSTRD = const(0x0b)  No obvious difference to _READ
-_SLEEP = const(0xb9)
+_SLEEP = const(0xB9)
 
 
 class FRAM(BlockDevice):
     def __init__(self, spi, cspins, size=512, verbose=True, block_size=9):
         if size not in (256, 512):
-            raise ValueError('FRAM size must be 256 or 512')
+            raise ValueError("FRAM size must be 256 or 512")
         super().__init__(block_size, len(cspins), size * 1024)
         self._spi = spi
         self._cspins = cspins
@@ -38,20 +39,20 @@ class FRAM(BlockDevice):
         # Check hardware
         density = 8 if size == 256 else 9
         for n, cs in enumerate(cspins):
-            mvp[:] = b'\0\0\0\0\0'
+            mvp[:] = b"\0\0\0\0\0"
             mvp[0] = _RDID
             cs(0)
             self._spi.write_readinto(mvp, mvp)
             cs(1)
             # Ignore bits labelled "proprietary"
-            if mvp[1] != 4 or mvp[2] != 0x7f:
-                s = 'FRAM not found at cspins[{}].'
+            if mvp[1] != 4 or mvp[2] != 0x7F:
+                s = "FRAM not found at cspins[{}]."
                 raise RuntimeError(s.format(n))
-            if  (mvp[3] & 0x1f) != density:
-                s = 'FRAM at cspins[{}] is incorrect size.'
+            if (mvp[3] & 0x1F) != density:
+                s = "FRAM at cspins[{}] is incorrect size."
                 raise RuntimeError(s.format(n))
         if verbose:
-            s = 'Total FRAM size {} bytes in {} devices.'
+            s = "Total FRAM size {} bytes in {} devices."
             print(s.format(self._a_bytes, n + 1))
         # Set up status register on each chip
         for cs in cspins:
@@ -69,7 +70,7 @@ class FRAM(BlockDevice):
             self._spi.write_readinto(mvp[:2], mvp[:2])
             cs(1)
             if mvp[1]:
-                s = 'FRAM has bad status at cspins[{}].'
+                s = "FRAM has bad status at cspins[{}]."
                 raise RuntimeError(s.format(n))
 
     def _wrctrl(self, cs, en):  # Enable/Disable device write
@@ -79,16 +80,16 @@ class FRAM(BlockDevice):
         self._spi.write(mvp[:1])
         cs(1)
 
-    #def sleep(self, on):
-        #mvp = self._mvp
-        #mvp[0] = _SLEEP
-        #for cs in self._cspins:
-            #cs(0)
-            #if on:
-                #self._spi.write(mvp[:1])
-            #else:
-                #time.sleep_us(500)
-            #cs(1)
+    # def sleep(self, on):
+    # mvp = self._mvp
+    # mvp[0] = _SLEEP
+    # for cs in self._cspins:
+    # cs(0)
+    # if on:
+    # self._spi.write(mvp[:1])
+    # else:
+    # time.sleep_us(500)
+    # cs(1)
 
     # Given an address, set current chip select and address buffer.
     # Return the number of bytes that can be processed in the current page.
@@ -100,9 +101,9 @@ class FRAM(BlockDevice):
         self._ccs = self._cspins[ca]  # Current chip select
         mvp = self._mvp
         mvp[1] = la >> 16
-        mvp[2] = (la >> 8) & 0xff
-        mvp[3] = la & 0xff
-        pe = (addr & ~0xff) + 0x100  # byte 0 of next page
+        mvp[2] = (la >> 8) & 0xFF
+        mvp[3] = la & 0xFF
+        pe = (addr & ~0xFF) + 0x100  # byte 0 of next page
         return min(nbytes, pe - la)
 
     # Interface to bdevice
@@ -125,7 +126,7 @@ class FRAM(BlockDevice):
                 mvp[0] = _WRITE
                 cs(0)
                 self._spi.write(mvp[:4])
-                self._spi.write(mvb[start: start + npage])
+                self._spi.write(mvb[start : start + npage])
                 cs(1)
                 self._wrctrl(cs, False)
             nbytes -= npage

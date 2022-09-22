@@ -10,12 +10,11 @@ from micropython import const
 
 
 class BlockDevice:
-
     def __init__(self, nbits, nchips, chip_size):
         self._c_bytes = chip_size  # Size of chip in bytes
         self._a_bytes = chip_size * nchips  # Size of array
         self._nbits = nbits  # Block size in bits
-        self._block_size = 2**nbits
+        self._block_size = 2 ** nbits
         self._rwbuf = bytearray(1)
 
     def __len__(self):
@@ -35,7 +34,9 @@ class BlockDevice:
     # Handle special cases of a slice. Always return a pair of positive indices.
     def _do_slice(self, addr):
         if not (addr.step is None or addr.step == 1):
-            raise NotImplementedError('only slices with step=1 (aka None) are supported')
+            raise NotImplementedError(
+                "only slices with step=1 (aka None) are supported"
+            )
         start = addr.start if addr.start is not None else 0
         stop = addr.stop if addr.stop is not None else self._a_bytes
         start = start if start >= 0 else self._a_bytes + start
@@ -48,9 +49,9 @@ class BlockDevice:
             if len(value) == (stop - start):
                 res = self.readwrite(start, value, False)
             else:
-                raise RuntimeError('Slice must have same length as data')
+                raise RuntimeError("Slice must have same length as data")
         except TypeError:
-            raise RuntimeError('Can only assign bytes/bytearray to a slice')
+            raise RuntimeError("Can only assign bytes/bytearray to a slice")
         return res
 
     def _rslice(self, addr):
@@ -80,18 +81,18 @@ class BlockDevice:
         if op == 6:  # Ignore ERASE because handled by driver.
             return 0
 
+
 # Hardware agnostic base class for flash memory.
 
 _RDBUFSIZE = const(32)  # Size of read buffer for erasure test
 
 
 class FlashDevice(BlockDevice):
-
     def __init__(self, nbits, nchips, chip_size, sec_size):
         super().__init__(nbits, nchips, chip_size)
         self.sec_size = sec_size
         self._cache_mask = sec_size - 1  # For 4K sector size: 0xfff
-        self._fmask = self._cache_mask ^ 0x3fffffff  # 4K -> 0x3ffff000
+        self._fmask = self._cache_mask ^ 0x3FFFFFFF  # 4K -> 0x3ffff000
         self._buf = bytearray(_RDBUFSIZE)
         self._mvbuf = memoryview(self._buf)
         self._cache = bytearray(sec_size)  # Cache always contains one sector
@@ -117,10 +118,12 @@ class FlashDevice(BlockDevice):
                 boff += nr
             # addr now >= self._acache: read from cache.
             sa = addr - self._acache  # Offset into cache
-            nr = min(nbytes, self._acache + self.sec_size - addr)  # No of bytes to read from cache
+            nr = min(
+                nbytes, self._acache + self.sec_size - addr
+            )  # No of bytes to read from cache
             mvb[boff : boff + nr] = self._mvd[sa : sa + nr]
             if nbytes - nr:  # Get any remaining data from chip
-                self.rdchip(addr + nr, mvb[boff + nr : ])
+                self.rdchip(addr + nr, mvb[boff + nr :])
         return mvb
 
     def sync(self):
@@ -129,8 +132,8 @@ class FlashDevice(BlockDevice):
         self._dirty = False
         return 0
 
-# Performance enhancement: if cache intersects address range, update it first.
-# Currently in this case it would be written twice. This may be rare.
+    # Performance enhancement: if cache intersects address range, update it first.
+    # Currently in this case it would be written twice. This may be rare.
     def write(self, addr, mvb):
         nbytes = len(mvb)
         acache = self._acache
@@ -160,7 +163,7 @@ class FlashDevice(BlockDevice):
         self._fill_cache(0)
 
     # Return True if a sector is erased.
-    def is_empty(self, addr, ev=0xff):
+    def is_empty(self, addr, ev=0xFF):
         mvb = self._mvbuf
         erased = True
         nbufs = self.sec_size // _RDBUFSIZE  # Read buffers per sector

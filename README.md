@@ -76,6 +76,7 @@ In the table below the Interface column includes page size in bytes.
 | Microchip    | 24xx256   | I2C 128   |  32KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Microchip    | 24xx128   | I2C 128   |  16KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Microchip    | 24xx64    | I2C 128   |   8KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Microchip    | 24xx32    | I2C 32    |   4KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Adafruit     | 4719      | SPI n/a   | 512KiB  |   FRAM     | [FRAM_SPI.md](./fram/FRAM_SPI.md) |
 | Adafruit     | 4718      | SPI n/a   | 256KiB  |   FRAM     | [FRAM_SPI.md](./fram/FRAM_SPI.md) |
 | Adafruit     | 1895      | I2C n/a   |  32KiB  |   FRAM     | [FRAM.md](./fram/FRAM.md)     |

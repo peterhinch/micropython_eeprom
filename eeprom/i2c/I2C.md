@@ -124,7 +124,8 @@ is detected or if device address lines are not wired as described in
 Arguments:  
  1. `i2c` Mandatory. An initialised master mode I2C bus created by `machine`.
  2. `chip_size=T24C512` The chip size in bits. The module provides constants
- `T24C64`, `T24C128`, `T24C256`, `T24C512` for the supported chip sizes.
+ `T24C32`, `T24C64`, `T24C128`, `T24C256`, `T24C512` for the supported
+ chip sizes.
  3. `verbose=True` If `True`, the constructor issues information on the EEPROM
  devices it has detected.
  4. `block_size=9` The block size reported to the filesystem. The size in bytes

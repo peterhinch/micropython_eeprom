@@ -60,8 +60,8 @@ def _testblock(eep, bs):
         return "Block test fail 3:" + str(list(res))
 
 
-def test():
-    eep = get_eep()
+def test(eep=None):
+    eep = eep if eep else get_eep()
     sa = 1000
     for v in range(256):
         eep[sa + v] = v
@@ -99,8 +99,8 @@ def test():
 
 
 # ***** TEST OF FILESYSTEM MOUNT *****
-def fstest(format=False):
-    eep = get_eep()
+def fstest(eep=None, format=False):
+    eep = eep if eep else get_eep()
     try:
         uos.umount("/eeprom")
     except OSError:
@@ -121,8 +121,8 @@ def fstest(format=False):
     print(uos.statvfs("/eeprom"))
 
 
-def cptest():  # Assumes pre-existing filesystem of either type
-    eep = get_eep()
+def cptest(eep=None):  # Assumes pre-existing filesystem of either type
+    eep = eep if eep else get_eep()
     if "eeprom" in uos.listdir("/"):
         print("Device already mounted.")
     else:
@@ -139,13 +139,13 @@ def cptest():  # Assumes pre-existing filesystem of either type
 
 
 # ***** TEST OF HARDWARE *****
-def full_test():
-    eep = get_eep()
+def full_test(eep=None, block_size = 128):
+    eep = eep if eep else get_eep()
     page = 0
-    for sa in range(0, len(eep), 128):
-        data = uos.urandom(128)
-        eep[sa : sa + 128] = data
-        if eep[sa : sa + 128] == data:
+    for sa in range(0, len(eep), block_size):
+        data = uos.urandom(block_size)
+        eep[sa : sa + block_size] = data
+        if eep[sa : sa + block_size] == data:
             print("Page {} passed".format(page))
         else:
             print("Page {} readback failed.".format(page))

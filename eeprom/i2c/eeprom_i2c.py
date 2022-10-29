@@ -8,21 +8,24 @@ from micropython import const
 from bdevice import BlockDevice
 
 _ADDR = const(0x50)  # Base address of chip
+_MAX_CHIPS_COUNT = const(8)  # Max number of chips
 
 T24C512 = const(65536)  # 64KiB 512Kbits
 T24C256 = const(32768)  # 32KiB 256Kbits
 T24C128 = const(16384)  # 16KiB 128Kbits
 T24C64 = const(8192)  # 8KiB 64Kbits
+T24C32 = const(4096)  # 4KiB 32Kbits
 
 # Logical EEPROM device consists of 1-8 physical chips. Chips must all be the
-# same size, and must have contiguous addresses starting from 0x50.
+# same size, and must have contiguous addresses.
 class EEPROM(BlockDevice):
     def __init__(self, i2c, chip_size=T24C512, verbose=True, block_size=9):
         self._i2c = i2c
-        if chip_size not in (T24C64, T24C128, T24C256, T24C512):
+        if chip_size not in (T24C32, T24C64, T24C128, T24C256, T24C512):
             print("Warning: possible unsupported chip. Size:", chip_size)
-        nchips = self.scan(verbose, chip_size)  # No. of EEPROM chips
+        nchips, min_chip_address = self.scan(verbose, chip_size)  # No. of EEPROM chips
         super().__init__(block_size, nchips, chip_size)
+        self._min_chip_address = min_chip_address
         self._i2c_addr = 0  # I2C address of current chip
         self._buf1 = bytearray(1)
         self._addrbuf = bytearray(2)  # Memory offset into current chip
@@ -30,16 +33,19 @@ class EEPROM(BlockDevice):
     # Check for a valid hardware configuration
     def scan(self, verbose, chip_size):
         devices = self._i2c.scan()  # All devices on I2C bus
-        eeproms = [d for d in devices if _ADDR <= d < _ADDR + 8]  # EEPROM chips
+        eeproms = [d for d in devices if _ADDR <= d < _ADDR + _MAX_CHIPS_COUNT]  # EEPROM chips
         nchips = len(eeproms)
         if nchips == 0:
             raise RuntimeError("EEPROM not found.")
-        if min(eeproms) != _ADDR or (max(eeproms) - _ADDR) >= nchips:
-            raise RuntimeError("Non-contiguous chip addresses", eeproms)
+        eeproms = sorted(eeproms)
+        if len(set(eeproms)) != len(eeproms):
+            raise RuntimeError('Duplicate addresses were found', eeproms)
+        if (eeproms[-1] - eeproms[0] + 1) != len(eeproms):
+            raise RuntimeError('Non-contiguous chip addresses', eeproms)
         if verbose:
             s = "{} chips detected. Total EEPROM size {}bytes."
             print(s.format(nchips, chip_size * nchips))
-        return nchips
+        return nchips, min(eeproms)
 
     def _wait_rdy(self):  # After a write, wait for device to become ready
         self._buf1[0] = 0
@@ -60,7 +66,7 @@ class EEPROM(BlockDevice):
         ca, la = divmod(addr, self._c_bytes)  # ca == chip no, la == offset into chip
         self._addrbuf[0] = (la >> 8) & 0xFF
         self._addrbuf[1] = la & 0xFF
-        self._i2c_addr = _ADDR + ca
+        self._i2c_addr = self._min_chip_address + ca
         pe = (addr & ~0x7F) + 0x80  # byte 0 of next page
         return min(nbytes, pe - la)
 

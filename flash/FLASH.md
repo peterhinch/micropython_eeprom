@@ -33,7 +33,10 @@ of RAM (compared to minuscule amounts for the FRAM and EEPROM drivers). This is
 an inevitable price for the large capacity of flash chips.
 
 FAT and littlefs filesystems are supported but the latter is preferred owing to
-its resilience and wear levelling characteristics.
+its resilience and wear levelling characteristics. Please note that this driver
+has been tested on LFS2 only. Users requiring a driver with minimum code size
+may want to consider [this driver](https://github.com/robert-hh/SPI_Flash) with
+LFS1.
 
 Arguably byte level access on such large devices has few use cases other than
 for facilitating effective hardware tests and for diagnostics.

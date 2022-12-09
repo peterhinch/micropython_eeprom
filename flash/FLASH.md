@@ -12,8 +12,8 @@ chips including those with 24-bit addressing. He tested an XPX XT25F32B; I
 tested Winbond W25Q32JV 4MiB and Cypress S25FL064L 8MiB devices.
 
 It is likely that other chips with 4096 byte blocks will work but I am unlikely
-to be able to support hardware I don't possess. Users should check datasheets
-for compatibility.
+to be able to support hardware I don't possess. See 
+[Section 6](./FLASH.md#6-unsupported-chips) for recommendations on settings.
 
 ## 1.2 The driver
 
@@ -34,9 +34,9 @@ an inevitable price for the large capacity of flash chips.
 
 FAT and littlefs filesystems are supported but the latter is preferred owing to
 its resilience and wear levelling characteristics. Please note that this driver
-has been tested on LFS2 only. Users requiring a driver with minimum code size
-may want to consider [this driver](https://github.com/robert-hh/SPI_Flash) with
-LFS1.
+has been tested on LFS2 only. Users requiring a driver with minimum RAM use
+may want to consider [this driver](https://github.com/robert-hh/SPI_Flash). 
+This supports an LFS1 filesystem on a single flash chip.
 
 Arguably byte level access on such large devices has few use cases other than
 for facilitating effective hardware tests and for diagnostics.
@@ -149,21 +149,22 @@ Arguments. In most cases only the first two mandatory args are required:
  1. `spi` An initialised SPI bus created by `machine`.
  2. `cspins` A list or tuple of `Pin` instances. Each `Pin` must be initialised
  as an output (`Pin.OUT`) and with `value=1` and be created by `machine`.
- 3. `size=None` Chip size in KiB. The size is read from the chip. If a value
- is passed, the actual size is compared with the passed value: a mismatch will
- raise a `ValueError`. A `ValueError` will also occur if chips in the array
- have differing sizes. See table below for values of chips tested to date.
+ 3. `size=None` Chip size in KiB. By default the size is read from the chip; a
+ `ValueError` will occur if chips in the array have differing sizes. See table
+ below for values of chips tested to date. If a `size` is specified, the driver
+ will assume that the value given is correct. If no `size` is specified and the
+ chip returns an unexpected value, a `ValueError` will be raised.
  4. `verbose=True` If `True`, the constructor issues information on the flash
  devices it has detected.
  5. `sec_size=4096` Chip sector size.
  6. `block_size=9` The block size reported to the filesystem. The size in bytes
  is `2**block_size` so is 512 bytes by default.
- 7. `cmd5=None` Flash chips can support two low level command sets, an old 4
- byte set and a newer 5 byte set capable of supporting a larger address
- space. By default if the size read from the chip's ID is <= 4096KiB the 4 byte
- set is used oterwise the 5 byte set is adopted. This works for supported
- chips. Setting `cmd5` `True` forces 5 byte commands, `False` forces 4 byte.
- This override is necessary for certain chip types (e.g. WinBond W25Q64FV).
+ 7. `cmd5=None` Flash chips can support two low level command sets, a 4 byte
+ set and a 5 byte set. By default if the size read from the chip's ID is 
+ <= 4096KiB the 4 byte set is used oterwise the 5 byte set is adopted. This
+ works for supported chips. Setting `cmd5` `True` forces 5 byte commands,
+ `False` forces 4 byte. This override is necessary for certain chip types
+ (e.g. WinBond W25Q64FV).
 
 Size values (KiB):  
 | Chip              | Size  |
@@ -172,6 +173,9 @@ Size values (KiB):
 | Cypress S25FL128L | 16384 |
 | Cypress S25FL064L | 8192  |
 | Winbond W25Q32JV  | 4096  |
+
+See [main readme](../README.md#141-chips-tested-by-users) for updates to the
+list of supported chips.
 
 ### 4.1.2 Methods providing byte level access
 
@@ -319,3 +323,21 @@ cp('/flash/main.py','/fl_ext/')
 
 See `upysh` in [micropython-lib](https://github.com/micropython/micropython-lib.git)
 for other filesystem tools for use at the REPL.
+
+# 6. Unsupported chips
+
+Flash chips have fairly standard commands so there is a good chance that
+unsupported chips will work so long as they are specified correctly.
+
+Automatic size detection for unsupported chips is not guaranteed: some chips
+produce nonstandard output on the relevant byte. Specifying the `size`
+constructor arg is highly recommended.
+
+It is also best to establish whether it uses 4 or 5 byte commands. This can be
+determined from the datasheet. Look up the code for `READ MEMORY`. If it is
+`03H` the device uses 4 byte instructions; if `13H` it uses 5-byte instructions.
+
+Instantiate with `cmd5` set `True` or `False` appropriately.
+
+If you have success with a new chip please raise an issue with the part no. and
+the `cmd5` setting and I will update the docs.

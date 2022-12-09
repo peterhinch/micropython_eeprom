@@ -9,7 +9,7 @@ from bdevice import FlashDevice
 
 # Supported instruction set:
 # 3 and 4 byte address commands
-_READ = const(0)
+_READ = const(0)  # Index of _CMDSxBA
 _PP = const(1)
 _SE = const(2)
 _CMDS3BA = b"\x03\x02\x20"
@@ -25,14 +25,7 @@ _SEC_SIZE = const(4096)  # Flash sector size 0x1000
 # Logical Flash device comprising one or more physical chips sharing an SPI bus.
 class FLASH(FlashDevice):
     def __init__(
-        self,
-        spi,
-        cspins,
-        size=None,
-        verbose=True,
-        sec_size=_SEC_SIZE,
-        block_size=9,
-        cmd5=None,
+        self, spi, cspins, size=None, verbose=True, sec_size=_SEC_SIZE, block_size=9, cmd5=None
     ):
         self._spi = spi
         self._cspins = cspins
@@ -46,7 +39,8 @@ class FLASH(FlashDevice):
             cs(1)
         time.sleep_ms(1)  # Meet Tpu 300μs
 
-        size = self.scan(verbose, size)  # KiB
+        if size is None:  # Get from chip
+            size = self.scan(verbose, size)  # KiB
         super().__init__(block_size, len(cspins), size * 1024, sec_size)
 
         # Select the correct command set
@@ -73,11 +67,10 @@ class FLASH(FlashDevice):
             if size is None:
                 size = scansize  # Save size of 1st chip
             if size != scansize:  # Mismatch passed size or 1st chip.
-                raise ValueError(
-                    "Flash size mismatch: expected {}KiB, found {}KiB".format(
-                        size, scansize
-                    )
-                )
+                raise ValueError(f"Flash size mismatch: expected {size}KiB, found {scansize}KiB")
+            if not 0x10 < mvp[3] < 0x22:
+                raise ValueError(f"Invalid chip size {size}KiB. Specify size arg.")
+
         if verbose:
             s = "{} chips detected. Total flash size {}MiB."
             n += 1

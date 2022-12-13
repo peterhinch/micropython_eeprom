@@ -28,9 +28,10 @@ The driver has the following attributes:
  4. It supports filesystem mounting.
  5. Alternatively it can support byte-level access using Python slice syntax.
 
-Flash technology requires a sector buffer. Consequently this driver uses 4KiB
-of RAM (compared to minuscule amounts for the FRAM and EEPROM drivers). This is
-an inevitable price for the large capacity of flash chips.
+Supporting byte level access on Flash technology requires a sector buffer.
+Consequently this driver uses 4KiB of RAM (compared to minuscule amounts for
+the FRAM and EEPROM drivers). This is an inevitable price for the large
+capacity of flash chips.
 
 FAT and littlefs filesystems are supported but the latter is preferred owing to
 its resilience and wear levelling characteristics. Please note that this driver
@@ -341,3 +342,31 @@ Instantiate with `cmd5` set `True` or `False` appropriately.
 
 If you have success with a new chip please raise an issue with the part no. and
 the `cmd5` setting and I will update the docs.
+
+# 7. Design notes
+
+This driver buffers one sector (4KiB) in RAM. This is necessary to support
+access as a byte array. I believed the buffer would confer an advantage when
+running a filesystem, but testing suggests that performance is essentially
+the same as an unbuffered driver. This appears to be true for littlefs 2 and
+FAT. Testing was done by comparison with 
+[this unbuffered driver](https://github.com/robert-hh/SPI_Flash).
+
+Both filesystem drivers seem to be designed on the assumption that they are
+communicating with a Flash chip; they always write one sector at a time. In the
+case of littlefs, whenever a byte in a sector is changed, it erases and writes
+a new sector. It does this without buffering, reading the contents of the old
+sector and modifying it on the fly.
+
+The FAT driver seems to do something similar, but according to its docs it can
+briefly create a buffer for two sectors.
+
+A possible future project would be an unbuffered Flash driver based on the one
+referenced above, with the following characteristics:
+ 1. No byte array access. Filesystem use only.
+ 2. A stand-alone driver not based on `bdevice.py`.
+ 3. Support for littlefs2 and FAT. Littlefs2 is preferred over littlefs1 unless
+ RAM minimisation is paramount.
+ 4. Support for multi-chip arrays.
+
+The advantage would be a saving of somewhere around 6KiB of RAM.

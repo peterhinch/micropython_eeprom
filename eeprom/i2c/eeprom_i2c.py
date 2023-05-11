@@ -67,7 +67,11 @@ class EEPROM(BlockDevice):
         self._addrbuf[0] = (la >> 8) & 0xFF
         self._addrbuf[1] = la & 0xFF
         self._i2c_addr = self._min_chip_address + ca
-        pe = (addr & ~0x7F) + 0x80  # byte 0 of next page
+        
+        # pe = (addr & ~0x7F) + 0x80  # byte 0 of next page
+        # original code was assuming 128 byte block size, corrected to use the block size passed in when initialized
+        pe = ((addr >> self._nbits) + 1) << self._nbits
+        
         return min(nbytes, pe - la)
 
     # Read or write multiple bytes at an arbitrary address

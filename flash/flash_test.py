@@ -18,7 +18,7 @@ def get_device():
         time.sleep(0.1)
     # Adjust to suit number of chips and their wiring.
     cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-    flash = FLASH(SPI(2, baudrate=20_000_000), cspins)
+    flash = FLASH(SPI(2, baudrate=20_000_000), cspins, cmd5=None) # Try to change cmd5 to True or False when test not pass
     print("Instantiated Flash")
     return flash
 
@@ -47,11 +47,13 @@ def _testblock(eep, bs):
     start = bs - len(d0)
     end = start + len(garbage)
     eep[start:end] = garbage
+    eep.sync()
     res = eep[start:end]
     if res != garbage:
         return "Block test fail 1:" + str(list(res))
     end = start + len(d0)
     eep[start:end] = d0
+    eep.sync()
     end = start + len(garbage)
     res = eep[start:end]
     if res != b"this >xxxxxxxxxxxxx":
@@ -59,6 +61,7 @@ def _testblock(eep, bs):
     start = bs
     end = bs + len(d1)
     eep[start:end] = d1
+    eep.sync()
     start = bs - len(d0)
     end = start + len(d2)
     res = eep[start:end]
@@ -71,6 +74,7 @@ def test():
     sa = 1000
     for v in range(256):
         eep[sa + v] = v
+    eep.sync() # Force sync, ensure we are not testing the cache
     for v in range(256):
         if eep[sa + v] != v:
             print(
@@ -82,6 +86,7 @@ def test():
     data = uos.urandom(30)
     sa = 2000
     eep[sa : sa + 30] = data
+    eep.sync()
     if eep[sa : sa + 30] == data:
         print("Test of slice readback passed")
 
@@ -149,22 +154,24 @@ def full_test(count=10):
         flash.sync()
         got = flash[sa : sa + 256]
         if got == data:
-            print("Pass {} address {:08x} passed".format(n, sa))
+            print("Round {} address {:08x} passed".format(n, sa))
             if sa & 0xFFF > (4096 - 253):
                 print("cross boundary")
         else:
-            print("Pass {} address {:08x} readback failed.".format(n, sa))
+            print("Round {} address {:08x} readback failed.".format(n, sa))
             sa1 = sa & 0xFFF
-            print("Bounds {} to {}".format(sa1, sa1 + 256))
-            #            flash.sync()
+            print("Bounds: {} to {}".format(sa1, sa1 + 256))
+            flash.sync() # Force sync before the second attempt
             got1 = flash[sa : sa + 256]
             if got1 == data:
-                print("second attempt OK")
+                print("Second attempt OK")
             else:
-                print("second attempt fail", got == got1)
+                print("Second attempt fail\nSame as the first attempt?", got == got1)
+                print("Differences Details")
+                print("index  wData  rData1  rData2")
                 for n, g in enumerate(got):
                     if g != data[n]:
-                        print("{} {:2x} {:2x} {:2x}".format(n, data[n], g, got1[n]))
+                        print("{:3d}    {:02x}    {:02x}    {:02x}".format(n, data[n], g, got1[n]))
             break
 
 

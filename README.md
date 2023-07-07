@@ -114,6 +114,10 @@ Winbond W25Q128JV Flash 128MiB tested by
 [mweber-bg](https://github.com/peterhinch/micropython_eeprom/issues/8#issuecomment-917603913).  
 This requires setting `cmd5=False`.
 
+Winbond W25Q64JV Flash 8MiB tested by
+[IlysvlVEizbr](https://github.com/peterhinch/micropython_eeprom/issues/17).  
+This requires setting `cmd5=False`.
+
 Microchip 25LC512 SPI EEPROM 64KiB tested by
 [ph1lj-6321](https://github.com/peterhinch/micropython_eeprom/issues/10).
 

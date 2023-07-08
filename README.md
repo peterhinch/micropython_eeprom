@@ -110,7 +110,7 @@ behaviour results.
 CAT24C256LI-G I2C EEPROM 32KiB tested by
 [Julien Phalip](https://github.com/peterhinch/micropython_eeprom/issues/6#issuecomment-825801065).
 
-Winbond W25Q128JV Flash 128MiB tested by
+Winbond W25Q128JV Flash 16MiB tested by
 [mweber-bg](https://github.com/peterhinch/micropython_eeprom/issues/8#issuecomment-917603913).  
 This requires setting `cmd5=False`.
 

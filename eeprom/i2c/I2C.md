@@ -131,8 +131,25 @@ Arguments:
  4. `block_size=9` The block size reported to the filesystem. The size in bytes
  is `2**block_size` so is 512 bytes by default.
  5. `addr` override base address for first chip
- 6. 'max_chips_count` override max_chips_count
+ 6. `max_chips_count` override max_chips_count
 
+ With `addr` and `max_chips_count` override, it's possible to make multiple
+ configuration
+ 
+ example:
+ array with custom chips count:
+ ```python
+ eeprom0 = EEPROM( i2c, max_chips_count=2 ) 
+ eeprom1 = EEPROM( i2c, addr=0x52, max_chips_count=2 )
+ ```
+ 1st array using address 0x50 and 0x51 and 2nd using array address 0x52 and 0x53.
+
+ individual chip usage:
+ ```python
+ eeprom0 = EEPROM( i2c, addr=0x50, max_chips_count=1 )
+ eeprom1 = EEPROM( i2c, addr=0x51, max_chips_count=1 )
+ ```
+ 
 ### 4.1.2 Methods providing byte level access
 
 It is possible to read and write individual bytes or arrays of arbitrary size.

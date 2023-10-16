@@ -23,7 +23,7 @@ class EEPROM(BlockDevice):
         self._i2c = i2c
         if chip_size not in (T24C32, T24C64, T24C128, T24C256, T24C512):
             print("Warning: possible unsupported chip. Size:", chip_size)
-        nchips, min_chip_address = self.scan(verbose, chip_size)  # No. of EEPROM chips
+        nchips, min_chip_address = self.scan(verbose, chip_size, addr, max_chips_count)  # No. of EEPROM chips
         super().__init__(block_size, nchips, chip_size)
         self._min_chip_address = min_chip_address
         self._i2c_addr = 0  # I2C address of current chip

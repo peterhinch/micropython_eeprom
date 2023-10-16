@@ -19,11 +19,11 @@ T24C32 = const(4096)  # 4KiB 32Kbits
 # Logical EEPROM device consists of 1-8 physical chips. Chips must all be the
 # same size, and must have contiguous addresses.
 class EEPROM(BlockDevice):
-    def __init__(self, i2c, chip_size=T24C512, verbose=True, block_size=9):
+    def __init__(self, i2c, chip_size=T24C512, verbose=True, block_size=9, addr=_ADDR, max_chips_count=_MAX_CHIPS_COUNT):
         self._i2c = i2c
         if chip_size not in (T24C32, T24C64, T24C128, T24C256, T24C512):
             print("Warning: possible unsupported chip. Size:", chip_size)
-        nchips, min_chip_address = self.scan(verbose, chip_size)  # No. of EEPROM chips
+        nchips, min_chip_address = self.scan(verbose, chip_size, addr, max_chips_count)  # No. of EEPROM chips
         super().__init__(block_size, nchips, chip_size)
         self._min_chip_address = min_chip_address
         self._i2c_addr = 0  # I2C address of current chip
@@ -31,9 +31,9 @@ class EEPROM(BlockDevice):
         self._addrbuf = bytearray(2)  # Memory offset into current chip
 
     # Check for a valid hardware configuration
-    def scan(self, verbose, chip_size):
+    def scan(self, verbose, chip_size, addr, max_chips_count):
         devices = self._i2c.scan()  # All devices on I2C bus
-        eeproms = [d for d in devices if _ADDR <= d < _ADDR + _MAX_CHIPS_COUNT]  # EEPROM chips
+        eeproms = [d for d in devices if addr <= d < addr + max_chips_count]  # EEPROM chips
         nchips = len(eeproms)
         if nchips == 0:
             raise RuntimeError("EEPROM not found.")

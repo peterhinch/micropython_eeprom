@@ -130,6 +130,8 @@ Arguments:
  devices it has detected.
  4. `block_size=9` The block size reported to the filesystem. The size in bytes
  is `2**block_size` so is 512 bytes by default.
+ 5. `addr` override base address for first chip
+ 6. 'max_chips_count` override max_chips_count
 
 ### 4.1.2 Methods providing byte level access
 

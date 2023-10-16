@@ -137,6 +137,7 @@ Arguments:
  configuration
  
  example:
+ 
  array with custom chips count:
  ```python
  eeprom0 = EEPROM( i2c, max_chips_count=2 ) 

@@ -209,6 +209,9 @@ These are provided by the base class. For the protocol definition see
 [the pyb documentation](http://docs.micropython.org/en/latest/library/uos.html#uos.AbstractBlockDev)
 also [here](http://docs.micropython.org/en/latest/reference/filesystem.html#custom-block-devices).
 
+These methods exist purely to support the block protocol. They are undocumented:
+their use in application code is not recommended.
+
 `readblocks()`  
 `writeblocks()`  
 `ioctl()`

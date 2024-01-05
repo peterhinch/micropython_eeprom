@@ -12,7 +12,7 @@ chips including those with 24-bit addressing. He tested an XPX XT25F32B; I
 tested Winbond W25Q32JV 4MiB and Cypress S25FL064L 8MiB devices.
 
 It is likely that other chips with 4096 byte blocks will work but I am unlikely
-to be able to support hardware I don't possess. See 
+to be able to support hardware I don't possess. See
 [Section 6](./FLASH.md#6-unsupported-chips) for recommendations on settings.
 
 ## 1.2 The driver
@@ -36,7 +36,7 @@ capacity of flash chips.
 FAT and littlefs filesystems are supported but the latter is preferred owing to
 its resilience and wear levelling characteristics. Please note that this driver
 has been tested on LFS2 only. Users requiring a driver with minimum RAM use
-may want to consider [this driver](https://github.com/robert-hh/SPI_Flash). 
+may want to consider [this driver](https://github.com/robert-hh/SPI_Flash).
 This supports an LFS1 filesystem on a single flash chip.
 
 Arguably byte level access on such large devices has few use cases other than
@@ -161,7 +161,7 @@ Arguments. In most cases only the first two mandatory args are required:
  6. `block_size=9` The block size reported to the filesystem. The size in bytes
  is `2**block_size` so is 512 bytes by default.
  7. `cmd5=None` Flash chips can support two low level command sets, a 4 byte
- set and a 5 byte set. By default if the size read from the chip's ID is 
+ set and a 5 byte set. By default if the size read from the chip's ID is
  <= 4096KiB the 4 byte set is used oterwise the 5 byte set is adopted. This
  works for supported chips. Setting `cmd5` `True` forces 5 byte commands,
  `False` forces 4 byte. This override is necessary for certain chip types
@@ -271,6 +271,9 @@ These are provided by the base class. For the protocol definition see
 [the pyb documentation](http://docs.micropython.org/en/latest/library/uos.html#uos.AbstractBlockDev)
 also [here](http://docs.micropython.org/en/latest/reference/filesystem.html#custom-block-devices).
 
+These methods exist purely to support the block protocol. They are undocumented:
+their use in application code is not recommended.
+
 `readblocks()`  
 `writeblocks()`  
 `ioctl()`
@@ -349,7 +352,7 @@ This driver buffers one sector (4KiB) in RAM. This is necessary to support
 access as a byte array. I believed the buffer would confer an advantage when
 running a filesystem, but testing suggests that performance is essentially
 the same as an unbuffered driver. This appears to be true for littlefs 2 and
-FAT. Testing was done by comparison with 
+FAT. Testing was done by comparison with
 [this unbuffered driver](https://github.com/robert-hh/SPI_Flash).
 
 Both filesystem drivers seem to be designed on the assumption that they are

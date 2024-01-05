@@ -135,12 +135,12 @@ Arguments:
 
  With `addr` and `max_chips_count` override, it's possible to make multiple
  configuration
- 
+
  example:
- 
+
  array with custom chips count:
  ```python
- eeprom0 = EEPROM( i2c, max_chips_count=2 ) 
+ eeprom0 = EEPROM( i2c, max_chips_count=2 )
  eeprom1 = EEPROM( i2c, addr=0x52, max_chips_count=2 )
  ```
  1st array using address 0x50 and 0x51 and 2nd using array address 0x52 and 0x53.
@@ -150,7 +150,7 @@ Arguments:
  eeprom0 = EEPROM( i2c, addr=0x50, max_chips_count=1 )
  eeprom1 = EEPROM( i2c, addr=0x51, max_chips_count=1 )
  ```
- 
+
 ### 4.1.2 Methods providing byte level access
 
 It is possible to read and write individual bytes or arrays of arbitrary size.
@@ -215,6 +215,9 @@ identify the chip.
 These are provided by the base class. For the protocol definition see
 [the pyb documentation](http://docs.micropython.org/en/latest/library/uos.html#uos.AbstractBlockDev)
 also [here](http://docs.micropython.org/en/latest/reference/filesystem.html#custom-block-devices).
+
+These methods exist purely to support the block protocol. They are undocumented:
+their use in application code is not recommended.
 
 `readblocks()`  
 `writeblocks()`  

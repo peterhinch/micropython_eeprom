@@ -132,6 +132,7 @@ Arguments:
  is `2**block_size` so is 512 bytes by default.
  5. `addr` override base address for first chip
  6. `max_chips_count` override max_chips_count
+ 7. `page_size=7` The binary logarithm of the page size of the EEPROMs, i.e., the page size in bytes is `2 ** page_size`. The page size may vary between chips from different manufacturers even for the same storage size. Note that specifying a too large value will most likely lead to data corruption in write operations. Look up the correct value for your setup in the chip's datasheet.
 
  With `addr` and `max_chips_count` override, it's possible to make multiple
  configuration

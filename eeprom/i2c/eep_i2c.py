@@ -132,7 +132,6 @@ def cptest(eep=None):  # Assumes pre-existing filesystem of either type
         print("Mounted device.")
     cp(__file__, "/eeprom/")
     # We may have the source file or a precompiled binary (*.mpy)
-    # suffix = __file__[__file__.rfind('.'):]
     cp(__file__.replace("eep", "eeprom"), "/eeprom/")
     print('Contents of "/eeprom": {}'.format(uos.listdir("/eeprom")))
     print(uos.statvfs("/eeprom"))

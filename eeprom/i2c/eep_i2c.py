@@ -67,9 +67,7 @@ def test(eep=None):
         eep[sa + v] = v
     for v in range(256):
         if eep[sa + v] != v:
-            print(
-                "Fail at address {} data {} should be {}".format(sa + v, eep[sa + v], v)
-            )
+            print("Fail at address {} data {} should be {}".format(sa + v, eep[sa + v], v))
             break
     else:
         print("Test of byte addressing passed")
@@ -134,14 +132,14 @@ def cptest(eep=None):  # Assumes pre-existing filesystem of either type
         print("Mounted device.")
     cp(__file__, "/eeprom/")
     # We may have the source file or a precompiled binary (*.mpy)
-    suffix = __file__[__file__.rfind('.'):]
-    cp("eeprom_i2c" + suffix, "/eeprom/")
+    # suffix = __file__[__file__.rfind('.'):]
+    cp(__file__.replace("eep", "eeprom"), "/eeprom/")
     print('Contents of "/eeprom": {}'.format(uos.listdir("/eeprom")))
     print(uos.statvfs("/eeprom"))
 
 
 # ***** TEST OF HARDWARE *****
-def full_test(eep=None, block_size = 128):
+def full_test(eep=None, block_size=128):
     eep = eep if eep else get_eep()
     page = 0
     for sa in range(0, len(eep), block_size):

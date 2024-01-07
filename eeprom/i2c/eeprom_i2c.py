@@ -19,7 +19,7 @@ T24C32 = const(4096)  # 4KiB 32Kbits
 # Logical EEPROM device consists of 1-8 physical chips. Chips must all be the
 # same size, and must have contiguous addresses.
 class EEPROM(BlockDevice):
-    def __init__(self, i2c, chip_size=T24C512, verbose=True, block_size=9, addr=_ADDR, max_chips_count=_MAX_CHIPS_COUNT):
+    def __init__(self, i2c, chip_size=T24C512, verbose=True, block_size=9, addr=_ADDR, max_chips_count=_MAX_CHIPS_COUNT, page_size=7):
         self._i2c = i2c
         if chip_size not in (T24C32, T24C64, T24C128, T24C256, T24C512):
             print("Warning: possible unsupported chip. Size:", chip_size)
@@ -29,6 +29,8 @@ class EEPROM(BlockDevice):
         self._i2c_addr = 0  # I2C address of current chip
         self._buf1 = bytearray(1)
         self._addrbuf = bytearray(2)  # Memory offset into current chip
+        self._page_size = 2 ** page_size
+        self._page_mask = ~(self._page_size - 1)
 
     # Check for a valid hardware configuration
     def scan(self, verbose, chip_size, addr, max_chips_count):
@@ -67,7 +69,7 @@ class EEPROM(BlockDevice):
         self._addrbuf[0] = (la >> 8) & 0xFF
         self._addrbuf[1] = la & 0xFF
         self._i2c_addr = self._min_chip_address + ca
-        pe = (addr & ~0x7F) + 0x80  # byte 0 of next page
+        pe = (addr & self._page_mask) + self._page_size  # byte 0 of next page
         return min(nbytes, pe - la)
 
     # Read or write multiple bytes at an arbitrary address

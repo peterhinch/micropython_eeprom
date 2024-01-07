@@ -132,8 +132,10 @@ def cptest(eep=None):  # Assumes pre-existing filesystem of either type
             print("Fail mounting device. Have you formatted it?")
             return
         print("Mounted device.")
-    cp("eep_i2c.py", "/eeprom/")
-    cp("eeprom_i2c.py", "/eeprom/")
+    cp(__file__, "/eeprom/")
+    # We may have the source file or a precompiled binary (*.mpy)
+    suffix = __file__[__file__.rfind('.'):]
+    cp("eeprom_i2c" + suffix, "/eeprom/")
     print('Contents of "/eeprom": {}'.format(uos.listdir("/eeprom")))
     print(uos.statvfs("/eeprom"))
 

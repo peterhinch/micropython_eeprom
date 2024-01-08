@@ -69,7 +69,7 @@ class EEPROM(BlockDevice):
         self._addrbuf[0] = (la >> 8) & 0xFF
         self._addrbuf[1] = la & 0xFF
         self._i2c_addr = self._min_chip_address + ca
-        pe = (addr & self._page_mask) + self._page_size  # byte 0 of next page
+        pe = (la & self._page_mask) + self._page_size  # byte 0 of next page
         return min(nbytes, pe - la)
 
     # Read or write multiple bytes at an arbitrary address

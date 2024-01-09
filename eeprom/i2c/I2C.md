@@ -43,8 +43,9 @@ EEPROM Pin numbers assume a PDIP package (8 pin plastic dual-in-line).
 | 8 Vcc  | 3V3 |  3V3    |
 
 For multiple chips the address lines A0, A1 and A2 of each chip need to be
-wired to 3V3 in such a way as to give each device a unique address. These must
-start at zero and be contiguous:
+wired to 3V3 in such a way as to give each device a unique address. In the case
+where chips are to form a single array these must start at zero and be
+contiguous:
 
 | Chip no. | A2  | A1  | A0  |
 |:--------:|:---:|:---:|:---:|
@@ -130,26 +131,37 @@ Arguments:
  devices it has detected.
  4. `block_size=9` The block size reported to the filesystem. The size in bytes
  is `2**block_size` so is 512 bytes by default.
- 5. `addr` override base address for first chip
- 6. `max_chips_count` override max_chips_count
- 7. `page_size=7` The binary logarithm of the page size of the EEPROMs, i.e., the page size in bytes is `2 ** page_size`. The page size may vary between chips from different manufacturers even for the same storage size. Note that specifying a too large value will most likely lead to data corruption in write operations. Look up the correct value for your setup in the chip's datasheet.
+ 5. `addr` override base address for first chip.
+ 6. `max_chips_count` override max_chips_count.
+ 7. `page_size=None` EEPROM chips have a page buffer. By default the driver
+ determines the size of this automatically. It is possible to override this by
+ passing an integer being the page size in bytes: 16, 32, 64, 128 or 256. The
+ page size may vary between chips from different manufacturers even for the
+ same storage size. Note that specifying too large a value will most likely lead
+ to data corruption in write operations and will cause the test script's basic
+ test to fail. The correct value for a device may be found in in the chip
+ datasheet. It is also reported if `verbose` is set. Auto-detecting page size
+ carries a risk of data loss if power fails while auto-detect is in progress.
 
- With `addr` and `max_chips_count` override, it's possible to make multiple
- configuration
-
- example:
-
- array with custom chips count:
+In most cases only the first two arguments are used, with an array being
+instantiated with (for example):
+```python
+from machine import I2C
+from eeprom_i2c import EEPROM, T24C512
+eep = EEPROM(I2C(2), T24C512)
+```
+It is possible to configure multiple chips as multiple arrays. This is done by
+means of the `addr` and `max_chips_count` args. Examples:
  ```python
- eeprom0 = EEPROM( i2c, max_chips_count=2 )
- eeprom1 = EEPROM( i2c, addr=0x52, max_chips_count=2 )
+ eeprom0 = EEPROM(i2c, max_chips_count = 2)
+ eeprom1 = EEPROM(i2c, addr = 0x52, max_chips_count = 2)
  ```
- 1st array using address 0x50 and 0x51 and 2nd using array address 0x52 and 0x53.
+ 1st array uses address 0x50 and 0x51 and 2nd uses address 0x52 and 0x53.
 
  individual chip usage:
  ```python
- eeprom0 = EEPROM( i2c, addr=0x50, max_chips_count=1 )
- eeprom1 = EEPROM( i2c, addr=0x51, max_chips_count=1 )
+ eeprom0 = EEPROM(i2c, addr = 0x50, max_chips_count = 1)
+ eeprom1 = EEPROM(i2c, addr = 0x51, max_chips_count = 1)
  ```
 
 ### 4.1.2 Methods providing byte level access

@@ -34,9 +34,7 @@ class BlockDevice:
     # Handle special cases of a slice. Always return a pair of positive indices.
     def _do_slice(self, addr):
         if not (addr.step is None or addr.step == 1):
-            raise NotImplementedError(
-                "only slices with step=1 (aka None) are supported"
-            )
+            raise NotImplementedError("only slices with step=1 (aka None) are supported")
         start = addr.start if addr.start is not None else 0
         stop = addr.stop if addr.stop is not None else self._a_bytes
         start = start if start >= 0 else self._a_bytes + start
@@ -82,6 +80,41 @@ class BlockDevice:
             return 0
 
 
+class EepromDevice(BlockDevice):
+    def __init__(self, nbits, nchips, chip_size, page_size, verbose):
+        super().__init__(nbits, nchips, chip_size)
+        # Handle page size arg
+        if page_size not in (None, 16, 32, 64, 128, 256):
+            raise ValueError(f"Invalid page size: {page_size}")
+        self._set_pagesize(page_size)  # Set page size
+        verbose and print("Page size:", self._page_size)
+
+    def _psize(self, ps):  # Set page size and page mask
+        self._page_size = ps
+        self._page_mask = ~(ps - 1)
+
+    def get_page_size(self):  # For test script
+        return self._page_size
+
+    def _set_pagesize(self, page_size):
+        if page_size is None:  # Measure it
+            self._psize(16)  # Conservative
+            old = self[:129]  # Save old contents (nonvolatile!)
+            self._psize(256)  # Ambitious
+            r = (16, 32, 64, 128)  # Legal page sizes + 256
+            for x in r:
+                self[x] = 255  # Write single bytes, don't invoke page write
+            self[0:129] = b"\0" * 129  # Zero 129 bytes attempting to use 256 byte pages
+            try:
+                ps = next(z for z in r if self[z])
+            except StopIteration:
+                ps = 256
+            self._psize(ps)
+            self[:129] = old
+        else:  # Validated page_size was supplied
+            self._psize(page_size)
+
+
 # Hardware agnostic base class for flash memory.
 
 _RDBUFSIZE = const(32)  # Size of read buffer for erasure test
@@ -118,9 +151,7 @@ class FlashDevice(BlockDevice):
                 boff += nr
             # addr now >= self._acache: read from cache.
             sa = addr - self._acache  # Offset into cache
-            nr = min(
-                nbytes, self._acache + self.sec_size - addr
-            )  # No of bytes to read from cache
+            nr = min(nbytes, self._acache + self.sec_size - addr)  # No of bytes to read from cache
             mvb[boff : boff + nr] = self._mvd[sa : sa + nr]
             if nbytes - nr:  # Get any remaining data from chip
                 self.rdchip(addr + nr, mvb[boff + nr :])

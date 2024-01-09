@@ -1,7 +1,7 @@
 # eep_i2c.py MicroPython test program for Microchip I2C EEPROM devices.
 
 # Released under the MIT License (MIT). See LICENSE.
-# Copyright (c) 2019 Peter Hinch
+# Copyright (c) 2019-2024 Peter Hinch
 
 import uos
 import time
@@ -23,13 +23,19 @@ def get_eep():
 def cp(source, dest):
     if dest.endswith("/"):  # minimal way to allow
         dest = "".join((dest, source.split("/")[-1]))  # cp /sd/file /eeprom/
-    with open(source, "rb") as infile:  # Caller should handle any OSError
-        with open(dest, "wb") as outfile:  # e.g file not found
-            while True:
-                buf = infile.read(100)
-                outfile.write(buf)
-                if len(buf) < 100:
-                    break
+    try:
+        with open(source, "rb") as infile:  # Caller should handle any OSError
+            with open(dest, "wb") as outfile:  # e.g file not found
+                while True:
+                    buf = infile.read(100)
+                    outfile.write(buf)
+                    if len(buf) < 100:
+                        break
+    except OSError as e:
+        if e.errno == 28:
+            print("Insufficient space for copy.")
+        else:
+            raise
 
 
 # ***** TEST OF DRIVER *****
@@ -94,6 +100,14 @@ def test(eep=None):
             print(res)
     else:
         print("Test chip boundary skipped: only one chip!")
+    pe = eep.get_page_size() + 1  # One byte past page
+    eep[pe] = 0xFF
+    eep[:257] = b"\0" * 257
+    print("Test page size: ", end="")
+    if eep[pe]:
+        print("FAIL")
+    else:
+        print("passed")
 
 
 # ***** TEST OF FILESYSTEM MOUNT *****
@@ -149,3 +163,16 @@ def full_test(eep=None, block_size=128):
         else:
             print("Page {} readback failed.".format(page))
         page += 1
+
+
+help = """Available tests:
+test()  Basic fuctional test
+full_test()  Read-write test of EEPROM chip(s)
+fstest()  Check or create a filesystem.
+cptest()  Check a filesystem by copying source files to it.
+
+Utilities:
+get_eep()  Initialise and return an EEPROM instance.
+cp()  Very crude file copy utility.
+"""
+print(help)

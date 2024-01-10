@@ -100,17 +100,22 @@ class EepromDevice(BlockDevice):
         if page_size is None:  # Measure it
             self._psize(16)  # Conservative
             old = self[:129]  # Save old contents (nonvolatile!)
-            self._psize(256)  # Ambitious
-            r = (16, 32, 64, 128)  # Legal page sizes + 256
-            for x in r:
-                self[x] = 255  # Write single bytes, don't invoke page write
-            self[0:129] = b"\0" * 129  # Zero 129 bytes attempting to use 256 byte pages
             try:
-                ps = next(z for z in r if self[z])
-            except StopIteration:
-                ps = 256
-            self._psize(ps)
-            self[:129] = old
+                self._psize(256)  # Ambitious
+                r = (16, 32, 64, 128)  # Legal page sizes + 256
+                for x in r:
+                    self[x] = 255  # Write single bytes, don't invoke page write
+                self[0:129] = b"\0" * 129  # Zero 129 bytes attempting to use 256 byte pages
+                try:
+                    ps = next(z for z in r if self[z])
+                except StopIteration:
+                    ps = 256
+                self._psize(ps)
+                self[:129] = old
+            except:  # If anything goes wrong, restore old data and raise
+                for n, v in enumerate(old):
+                    self[n] = v
+                raise
         else:  # Validated page_size was supplied
             self._psize(page_size)
 

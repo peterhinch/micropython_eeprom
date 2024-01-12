@@ -131,17 +131,13 @@ Arguments:
  devices it has detected.
  4. `block_size=9` The block size reported to the filesystem. The size in bytes
  is `2**block_size` so is 512 bytes by default.
- 5. `addr` override base address for first chip.
- 6. `max_chips_count` override max_chips_count.
+ 5. `addr` Override base address for first chip. See
+ [4.1.6 Special configurations](./I2C.md#416-special-configurations).
+ 6. `max_chips_count` Override max_chips_count - see above reference.
  7. `page_size=None` EEPROM chips have a page buffer. By default the driver
  determines the size of this automatically. It is possible to override this by
- passing an integer being the page size in bytes: 16, 32, 64, 128 or 256. The
- page size may vary between chips from different manufacturers even for the
- same storage size. Note that specifying too large a value will most likely lead
- to data corruption in write operations and will cause the test script's basic
- test to fail. The correct value for a device may be found in in the chip
- datasheet. It is also reported if `verbose` is set. Auto-detecting page size
- carries a risk of data loss if power fails while auto-detect is in progress.
+ passing an integer being the page size in bytes: 16, 32, 64, 128 or 256. See
+ [4.1.5 Page size](./I2C.md#414-page-size) for issues surrounding this.
 
 In most cases only the first two arguments are used, with an array being
 instantiated with (for example):
@@ -150,26 +146,13 @@ from machine import I2C
 from eeprom_i2c import EEPROM, T24C512
 eep = EEPROM(I2C(2), T24C512)
 ```
-It is possible to configure multiple chips as multiple arrays. This is done by
-means of the `addr` and `max_chips_count` args. Examples:
- ```python
- eeprom0 = EEPROM(i2c, max_chips_count = 2)
- eeprom1 = EEPROM(i2c, addr = 0x52, max_chips_count = 2)
- ```
- 1st array uses address 0x50 and 0x51 and 2nd uses address 0x52 and 0x53.
-
- individual chip usage:
- ```python
- eeprom0 = EEPROM(i2c, addr = 0x50, max_chips_count = 1)
- eeprom1 = EEPROM(i2c, addr = 0x51, max_chips_count = 1)
- ```
 
 ### 4.1.2 Methods providing byte level access
 
 It is possible to read and write individual bytes or arrays of arbitrary size.
 Larger arrays are faster, especially when writing: the driver uses the chip's
-hardware page access where possible. Writing a page (128 bytes) takes the same
-time (~5ms) as writing a single byte.
+hardware page access where possible. Writing a page takes the same time (~5ms)
+as writing a single byte.
 
 #### 4.1.2.1 `__getitem__` and `__setitem__`
 
@@ -223,6 +206,10 @@ Other than for debugging there is no need to call `scan()`: the constructor
 will throw a `RuntimeError` if it fails to communicate with and correctly
 identify the chip.
 
+#### get_page_size
+
+Return the page size in bytes.
+
 ### 4.1.4 Methods providing the block protocol
 
 These are provided by the base class. For the protocol definition see
@@ -235,6 +222,37 @@ their use in application code is not recommended.
 `readblocks()`  
 `writeblocks()`  
 `ioctl()`
+
+### 4.1.5 Page size
+
+EEPROM chips have a RAM buffer enabling fast writing of data blocks. Writing a
+page takes the same time (~5ms) as writing a single byte. The page size may vary
+between chips from different manufacturers even for the same storage size.
+Specifying too large a value will most likely lead to data corruption in write
+operations and will cause the test script's basic test to fail. Too small a
+value will impact write performance. The correct value for a device may be found
+in in the chip datasheet. It is also reported if `verbose` is set and when
+running the test scripts.
+
+Auto-detecting page size carries a risk of data loss if power fails while
+auto-detect is in progress. In production code the value should be specified
+explicitly.
+
+### 4.1.6 Special configurations
+
+It is possible to configure multiple chips as multiple arrays. This is done by
+means of the `addr` and `max_chips_count` args. Examples:
+ ```python
+ eeprom0 = EEPROM(i2c, max_chips_count = 2)
+ eeprom1 = EEPROM(i2c, addr = 0x52, max_chips_count = 2)
+ ```
+ 1st array uses address 0x50 and 0x51 and 2nd uses address 0x52 and 0x53.
+
+ Individual chip usage:
+ ```python
+ eeprom0 = EEPROM(i2c, addr = 0x50, max_chips_count = 1)
+ eeprom1 = EEPROM(i2c, addr = 0x51, max_chips_count = 1)
+ ```
 
 ## 4.2 Byte addressing usage example
 
@@ -268,20 +286,21 @@ possible to use JSON/pickle to store objects in a filesystem.
 
 # 5. Test program eep_i2c.py
 
-This assumes a Pyboard 1.x or Pyboard D with EEPROM(s) wired as above. It
-provides the following.
+This assumes a Pyboard 1.x or Pyboard D with EEPROM(s) wired as above. On other
+hardware, adapt `get_eep` at the start of the script. It provides the following.
 
 ## 5.1 test()
 
 This performs a basic test of single and multi-byte access to chip 0. The test
-reports how many chips can be accessed. Existing array data will be lost. This
-primarily tests the driver: as a hardware test it is not exhaustive.
+reports how many chips can be accessed. The current page size is printed and its
+validity is tested. Existing array data will be lost. This primarily tests the
+driver: as a hardware test it is not exhaustive.
 
 ## 5.2 full_test()
 
-This is a hardware test. Tests the entire array. Fills each 128 byte page with
-random data, reads it back, and checks the outcome. Existing array data will be
-lost.
+This is a hardware test. Tests the entire array. Fills the array with random
+data in blocks of 256 byes. After each block is written, it is read back and the
+contents compared to the data written. Existing array data will be lost.
 
 ## 5.3 fstest(format=False)
 

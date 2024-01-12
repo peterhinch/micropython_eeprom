@@ -4,7 +4,7 @@
 # Documentation in BASE_CLASSES.md
 
 # Released under the MIT License (MIT). See LICENSE.
-# Copyright (c) 2019 Peter Hinch
+# Copyright (c) 2019-2024 Peter Hinch
 
 from micropython import const
 
@@ -80,6 +80,7 @@ class BlockDevice:
             return 0
 
 
+# Hardware agnostic base class for EEPROM arrays
 class EepromDevice(BlockDevice):
     def __init__(self, nbits, nchips, chip_size, page_size, verbose):
         super().__init__(nbits, nchips, chip_size)
@@ -96,26 +97,22 @@ class EepromDevice(BlockDevice):
     def get_page_size(self):  # For test script
         return self._page_size
 
+    # Measuring page size should not be done in production code. See docs.
     def _set_pagesize(self, page_size):
-        if page_size is None:  # Measure it
+        if page_size is None:  # Measure it.
             self._psize(16)  # Conservative
             old = self[:129]  # Save old contents (nonvolatile!)
+            self._psize(256)  # Ambitious
+            r = (16, 32, 64, 128)  # Legal page sizes + 256
+            for x in r:
+                self[x] = 255  # Write single bytes, don't invoke page write
+            self[0:129] = b"\0" * 129  # Zero 129 bytes attempting to use 256 byte pages
             try:
-                self._psize(256)  # Ambitious
-                r = (16, 32, 64, 128)  # Legal page sizes + 256
-                for x in r:
-                    self[x] = 255  # Write single bytes, don't invoke page write
-                self[0:129] = b"\0" * 129  # Zero 129 bytes attempting to use 256 byte pages
-                try:
-                    ps = next(z for z in r if self[z])
-                except StopIteration:
-                    ps = 256
-                self._psize(ps)
-                self[:129] = old
-            except:  # If anything goes wrong, restore old data and raise
-                for n, v in enumerate(old):
-                    self[n] = v
-                raise
+                ps = next(z for z in r if self[z])
+            except StopIteration:
+                ps = 256
+            self._psize(ps)
+            self[:129] = old
         else:  # Validated page_size was supplied
             self._psize(page_size)
 

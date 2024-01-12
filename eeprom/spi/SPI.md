@@ -18,9 +18,12 @@ The driver has the following attributes:
  7. Alternatively it can support byte-level access using Python slice syntax.
  8. RAM allocations are minimised. Buffer sizes are tiny.
 
-##### [Main readme](../../README.md)
+## 1.1 Notes
 
-## 1.1 This document
+As of Jan 2024 this driver has been updated to fix a bug where the device page
+size was less than 256. A further aim was to make the driver more generic, with
+a better chance of working with other SPI EEPROM chips. The constructor has
+additional optional args to support this.
 
 Code samples assume one or more Microchip devices. If using the STM chip the
 SPI baudrate should be 5MHz and the chip size must be specified to the `EEPROM`
@@ -28,6 +31,8 @@ constructor, e.g.:
 ```python
 eep = EEPROM(SPI(2, baudrate=5_000_000), cspins, 256)
 ```
+
+##### [Main readme](../../README.md)
 
 # 2. Connections
 
@@ -91,7 +96,7 @@ import os
 from machine import SPI, Pin
 from eeprom_spi import EEPROM
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-eep = EEPROM(SPI(2, baudrate=20_000_000), cspins)
+eep = EEPROM(SPI(2, baudrate=20_000_000), cspins, 128)  # 128KiB chips
 # Format the filesystem
 os.VfsLfs2.mkfs(eep)  # Omit this to mount an existing filesystem
 os.mount(eep,'/eeprom')
@@ -103,14 +108,15 @@ Note that, at the outset, you need to decide whether to use the array as a
 mounted filesystem or as a byte array. The filesystem is relatively small but
 has high integrity owing to the hardware longevity. Typical use-cases involve
 files which are frequently updated. These include files used for storing Python
-objects serialised using Pickle/ujson or files holding a btree database.
+objects serialised using Pickle/json or files holding a btree database.
 
 The SPI bus must be instantiated using the `machine` module.
 
 ## 4.1 The EEPROM class
 
 An `EEPROM` instance represents a logical EEPROM: this may consist of multiple
-physical devices on a common SPI bus.
+physical devices on a common SPI bus. Alternatively multiple EEPROM instances
+may share the bus, differentiated by their CS pins.
 
 ### 4.1.1 Constructor
 
@@ -119,14 +125,21 @@ each chip select line an EEPROM array is instantiated. A `RuntimeError` will be
 raised if a device is not detected on a CS line.
 
 Arguments:  
- 1. `spi` Mandatory. An initialised SPI bus created by `machine`.
+ 1. `spi` An initialised SPI bus created by `machine`.
  2. `cspins` A list or tuple of `Pin` instances. Each `Pin` must be initialised
  as an output (`Pin.OUT`) and with `value=1` and be created by `machine`.
- 3. `size=128` Chip size in KiB. Set to 256 for the STM chip.
- 4. `verbose=True` If `True`, the constructor issues information on the EEPROM
- devices it has detected.
+ 3. `size` Chip size in KiB. Set to 256 for the STM chip, 128 for the Microchip.
+ 4. `verbose=True` If `True`, the constructor performs a presence check for an
+ EEPROM on each chip select pin and reports devices it has detected. See
+ [4.1.5 Auto detection](./SPI.md#415-auto-detection) for observations on
+ production code.
  5. `block_size=9` The block size reported to the filesystem. The size in bytes
  is `2**block_size` so is 512 bytes by default.
+ 6. `page_size=None` EEPROM devices have a RAM buffer enabling fast writes. The
+ driver determines this automatically by default. It is possible to override
+ this by passing an integer being the page size in bytes: 16, 32, 64, 128 or 256.
+ See [4.1.5 Auto detection](./SPI.md#415-auto-detection) for reasons why this
+ is advised in production code.
 
 SPI baudrate: The 25LC1024 supports baudrates of upto 20MHz. If this value is
 specified the platform will produce the highest available frequency not
@@ -152,7 +165,7 @@ of single byte access:
 from machine import SPI, Pin
 from eeprom_spi import EEPROM
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-eep = EEPROM(SPI(2, baudrate=20_000_000), cspins)
+eep = EEPROM(SPI(2, baudrate=20_000_000), cspins, 128)
 eep[2000] = 42
 print(eep[2000])  # Return an integer
 ```
@@ -162,7 +175,7 @@ writing, the size of the slice must match the length of the buffer:
 from machine import SPI, Pin
 from eeprom_spi import EEPROM
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-eep = EEPROM(SPI(2, baudrate=20_000_000), cspins)
+eep = EEPROM(SPI(2, baudrate=20_000_000), cspins, 128)
 eep[2000:2002] = bytearray((42, 43))
 print(eep[2000:2002])  # Returns a bytearray
 ```
@@ -187,7 +200,7 @@ advantage when reading of using a pre-allocated buffer. Arguments:
 #### The len operator
 
 The size of the EEPROM array in bytes may be retrieved by issuing `len(eep)`
-where `eep` is the `EEPROM` instance.
+where `eep` is an `EEPROM` instance.
 
 #### scan
 
@@ -201,7 +214,11 @@ identify the chip.
 
 #### erase
 
-Erases the entire array. Available only on the Microchip device.
+Zero the entire array. Can take several seconds.
+
+#### get_page_size
+
+Return the page size in bytes.
 
 ### 4.1.4 Methods providing the block protocol
 
@@ -216,6 +233,19 @@ their use in application code is not recommended.
 `writeblocks()`  
 `ioctl()`
 
+### 4.1.5 Auto detection
+
+The driver constructor uses auto-detection in two circumstances:
+* If `verbose` is specified, it checks each chip select for chip presence.
+* If `page_size` is set to `None` the value is determined by measurement.
+
+In both cases data is written to the chips, then restored from RAM. If a power
+outage were to occur while either process was in progress, corruption could
+occur. It is therefore recommended that, in production code, `verbose` is
+`False` and `page_size` is set to an integer. The page size may be determined
+from the chip datasheet. It is also printed on instantiation if `verbose` is
+set: running any of the test scripts will do this.
+
 ## 4.2 Byte addressing usage example
 
 A sample application: saving a configuration dict (which might be large and
@@ -225,7 +255,7 @@ import ujson
 from machine import SPI, Pin
 from eeprom_spi import EEPROM
 cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
-eep = EEPROM(SPI(2, baudrate=20_000_000), cspins)
+eep = EEPROM(SPI(2, baudrate=20_000_000), cspins, 128)
 d = {1:'one', 2:'two'}  # Some kind of large object
 wdata = ujson.dumps(d).encode('utf8')
 sl = '{:10d}'.format(len(wdata)).encode('utf8')
@@ -252,18 +282,20 @@ possible to use JSON/pickle to store objects in a filesystem.
 This assumes a Pyboard 1.x or Pyboard D with two EEPROMs wired to SPI(2) as
 above with chip selects connected to pins `Y4` and `Y5`. It provides the
 following. In all cases the stm arg should be `True` if using the STM chips.
+On other hardware, adapt `cspins` and `get_eep` at the start of the script.
 
 ## 5.1 test(stm=False)
 
 This performs a basic test of single and multi-byte access to chip 0. The test
-reports how many chips can be accessed. Existing array data will be lost. This
-primarily tests the driver: as a hardware test it is not exhaustive.
+reports how many chips can be accessed. The current page size is printed and its
+validity is tested. Existing array data will be lost. This primarily tests the
+driver: as a hardware test it is not exhaustive.
 
 ## 5.2 full_test(stm=False)
 
-This is a hardware test. Tests the entire array. Fills each 256 byte page with
-random data, reads it back, and checks the outcome. Existing array data will be
-lost.
+This is a hardware test. Tests the entire array. Fills the array with random
+data in blocks of 256 byes. After each block is written, it is read back and the
+contents compared to the data written. Existing array data will be lost.
 
 ## 5.3 fstest(format=False, stm=False)
 

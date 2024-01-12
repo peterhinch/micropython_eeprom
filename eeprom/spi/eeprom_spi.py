@@ -2,114 +2,89 @@
 # tested devices).
 
 # Released under the MIT License (MIT). See LICENSE.
-# Copyright (c) 2019-2022 Peter Hinch
+# Copyright (c) 2019-2024 Peter Hinch
+
+# Thanks are due to Abel Deuring for help in diagnosing and fixing a page size issue.
 
 import time
+from os import urandom
 from micropython import const
-from bdevice import BlockDevice
+from bdevice import EepromDevice
 
 # Supported instruction set - common to both chips:
 _READ = const(3)
 _WRITE = const(2)
 _WREN = const(6)  # Write enable
 _RDSR = const(5)  # Read status register
-# Microchip only:
-_RDID = const(0xAB)  # Read chip ID
-_CE = const(0xC7)  # Chip erase
-# STM only:
-_RDID_STM = const(0x83)  # Read ID page
-_WRID_STM = const(0x82)
-_STM_ID = const(0x30)  # Arbitrary ID for STM chip
-# Not implemented: Write disable and Write status register
-# _WRDI = const(4)
-# _WRSR = const(1)
 
 # Logical EEPROM device comprising one or more physical chips sharing an SPI bus.
-class EEPROM(BlockDevice):
-    def __init__(self, spi, cspins, size=128, verbose=True, block_size=9):
-        # args: virtual block size in bits, no. of chips, bytes in each chip
+# args: SPI bus, tuple of CS Pin instances, chip size in KiB
+# verbose: Test for chip presence and report
+# block_size: Sector size for filesystems. See docs.
+# erok: True if chip supports erase.
+# page_size: None is auto detect. See docs.
+class EEPROM(EepromDevice):
+    def __init__(self, spi, cspins, size, verbose=True, block_size=9, page_size=None):
         if size not in (64, 128, 256):
-            print("Warning: possible unsupported chip. Size:", size)
-        super().__init__(block_size, len(cspins), size * 1024)
-        self._stm = size == 256
+            print(f"Warning: possible unsupported chip. Size: {size}KiB")
         self._spi = spi
         self._cspins = cspins
         self._ccs = None  # Chip select Pin object for current chip
+        self._size = size * 1024  # Chip size in bytes
         self._bufp = bytearray(5)  # instruction + 3 byte address + 1 byte value
         self._mvp = memoryview(self._bufp)  # cost-free slicing
-        self.scan(verbose)
+        if verbose:  # Test for presence of devices
+            self.scan()
+        # superclass figures out _page_size and _page_mask
+        super().__init__(block_size, len(cspins), self._size, page_size, verbose)
+        if verbose:
+            print(f"Total EEPROM size {self._a_bytes:,} bytes.")
 
-    # Read ID block ID[0]
-    def _stm_rdid(self, n):
-        cs = self._cspins[n]
+    # Low level device presence detect. Reads a location, then writes to it. If
+    # a write value is passed, uses that, otherwise writes the one's complement
+    # of the value read.
+    def _devtest(self, cs, la, v=None):
+        buf = bytearray(1)
         mvp = self._mvp
-        mvp[:] = b"\0\0\0\0\0"
-        mvp[0] = _RDID_STM
+        mvp[:] = b"\0" * 5
+        # mvp[1] = la >> 16
+        # mvp[2] = (la >> 8) & 0xFF
+        # mvp[3] = la & 0xFF
+        mvp[0] = _READ
         cs(0)
-        self._spi.write_readinto(mvp, mvp)
+        self._spi.write(mvp[:4])
+        res = self._spi.read(1)
         cs(1)
-        return mvp[4]
-
-    # Write a fixed value to ID[0]
-    def _stm_wrid(self, n):
-        cs = self._ccs
-        mvp = self._mvp
         mvp[0] = _WREN
         cs(0)
-        self._spi.write(mvp[:1])  # Enable write
+        self._spi.write(mvp[:1])
         cs(1)
-        mvp[:] = b"\0\0\0\0\0"
-        mvp[0] = _WRID_STM
-        mvp[4] = _STM_ID
+        mvp[0] = _WRITE
         cs(0)
-        self._spi.write(mvp)
-        cs(1)
-        self._wait_rdy()
+        self._spi.write(mvp[:4])
+        buf[0] = res[0] ^ 0xFF if v is None else v
+        self._spi.write(buf)
+        cs(1)  # Trigger write start
+        self._ccs = cs
+        self._wait_rdy()  # Wait until done (6ms max)
+        return res[0]
 
-    # Check for valid hardware on each CS pin: use ID block
-    def _stm_scan(self):
+    def scan(self):
+        # Generate a random address to minimise wear
+        la = int.from_bytes(urandom(3), "little") % self._size
         for n, cs in enumerate(self._cspins):
-            self._ccs = cs
-            if self._stm_rdid(n) != _STM_ID:
-                self._stm_wrid(n)
-            if self._stm_rdid(n) != _STM_ID:
-                raise RuntimeError("M95M02 chip not found at cs[{}].".format(n))
+            old = self._devtest(cs, la)
+            new = self._devtest(cs, la, old)
+            if old != new ^ 0xFF:
+                raise RuntimeError(f"Chip not found at cs[{n}]")
+        print(f"{n + 1} chips detected.")
         return n
-
-    # Scan for Microchip devices: read manf ID
-    def _mc_scan(self):
-        mvp = self._mvp
-        for n, cs in enumerate(self._cspins):
-            mvp[:] = b"\0\0\0\0\0"
-            mvp[0] = _RDID
-            cs(0)
-            self._spi.write_readinto(mvp, mvp)
-            cs(1)
-            if mvp[4] != 0x29:
-                raise RuntimeError("25xx1024 chip not found at cs[{}].".format(n))
-        return n
-
-    # Check for a valid hardware configuration
-    def scan(self, verbose):
-        n = self._stm_scan() if self._stm else self._mc_scan()
-        if verbose:
-            s = "{} chips detected. Total EEPROM size {}bytes."
-            print(s.format(n + 1, self._a_bytes))
 
     def erase(self):
-        if self._stm:
-            raise RuntimeError("Erase not available on STM chip")
         mvp = self._mvp
-        for cs in self._cspins:  # For each chip
-            mvp[0] = _WREN
-            cs(0)
-            self._spi.write(mvp[:1])  # Enable write
-            cs(1)
-            mvp[0] = _CE
-            cs(0)
-            self._spi.write(mvp[:1])  # Start erase
-            cs(1)
-            self._wait_rdy()  # Wait for erase to complete
+        block = b"\0" * 256
+        for n in range(0, self._a_bytes, 256):
+            self[n : n + 256] = block
 
     def _wait_rdy(self):  # After a write, wait for device to become ready
         mvp = self._mvp
@@ -134,7 +109,7 @@ class EEPROM(BlockDevice):
         mvp[1] = la >> 16
         mvp[2] = (la >> 8) & 0xFF
         mvp[3] = la & 0xFF
-        pe = (addr & ~0xFF) + 0x100  # byte 0 of next page
+        pe = (la & self._page_mask) + self._page_size  # byte 0 of next page
         return min(nbytes, pe - la)
 
     # Read or write multiple bytes at an arbitrary address

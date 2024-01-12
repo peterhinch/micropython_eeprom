@@ -19,7 +19,7 @@ def get_eep(stm):
     if stm:
         eep = EEPROM(SPI(2, baudrate=5_000_000), cspins, 256)
     else:
-        eep = EEPROM(SPI(2, baudrate=20_000_000), cspins)
+        eep = EEPROM(SPI(2, baudrate=20_000_000), cspins, 128)
     print("Instantiated EEPROM")
     return eep
 
@@ -28,13 +28,19 @@ def get_eep(stm):
 def cp(source, dest):
     if dest.endswith("/"):  # minimal way to allow
         dest = "".join((dest, source.split("/")[-1]))  # cp /sd/file /eeprom/
-    with open(source, "rb") as infile:  # Caller should handle any OSError
-        with open(dest, "wb") as outfile:  # e.g file not found
-            while True:
-                buf = infile.read(100)
-                outfile.write(buf)
-                if len(buf) < 100:
-                    break
+    try:
+        with open(source, "rb") as infile:  # Caller should handle any OSError
+            with open(dest, "wb") as outfile:  # e.g file not found
+                while True:
+                    buf = infile.read(100)
+                    outfile.write(buf)
+                    if len(buf) < 100:
+                        break
+    except OSError as e:
+        if e.errno == 28:
+            print("Insufficient space for copy.")
+        else:
+            raise
 
 
 # ***** TEST OF DRIVER *****
@@ -72,9 +78,7 @@ def test(stm=False):
         eep[sa + v] = v
     for v in range(256):
         if eep[sa + v] != v:
-            print(
-                "Fail at address {} data {} should be {}".format(sa + v, eep[sa + v], v)
-            )
+            print("Fail at address {} data {} should be {}".format(sa + v, eep[sa + v], v))
             break
     else:
         print("Test of byte addressing passed")
@@ -101,6 +105,14 @@ def test(stm=False):
             print(res)
     else:
         print("Test chip boundary skipped: only one chip!")
+    pe = eep.get_page_size()  # One byte past page
+    eep[pe] = 0xFF
+    eep[:257] = b"\0" * 257
+    print("Test page size: ", end="")
+    if eep[pe]:
+        print("FAIL")
+    else:
+        print("passed")
 
 
 # ***** TEST OF FILESYSTEM MOUNT *****
@@ -137,8 +149,9 @@ def cptest(stm=False):  # Assumes pre-existing filesystem of either type
             print("Fail mounting device. Have you formatted it?")
             return
         print("Mounted device.")
-    cp("eep_spi.py", "/eeprom/")
-    cp("eeprom_spi.py", "/eeprom/")
+    cp(__file__, "/eeprom/")
+    # We may have the source file or a precompiled binary (*.mpy)
+    cp(__file__.replace("eep", "eeprom"), "/eeprom/")
     print('Contents of "/eeprom": {}'.format(uos.listdir("/eeprom")))
     print(uos.statvfs("/eeprom"))
 
@@ -146,23 +159,29 @@ def cptest(stm=False):  # Assumes pre-existing filesystem of either type
 # ***** TEST OF HARDWARE *****
 def full_test(stm=False):
     eep = get_eep(stm)
-    page = 0
+    block = 0
     for sa in range(0, len(eep), 256):
         data = uos.urandom(256)
         eep[sa : sa + 256] = data
         got = eep[sa : sa + 256]
         if got == data:
-            print("Page {} passed".format(page))
+            print(f"Block {block} passed")
         else:
-            print("Page {} readback failed.".format(page))
+            print(f"Block {block} readback failed.")
             break
-        page += 1
+        block += 1
 
 
-test_str = """Available tests (see SPI.md):
-test(stm=False)  Basic hardware test.
-full_test(stm=False)  Thorough hardware test.
-fstest(format=False, stm=False)  Filesystem test (see doc).
-cptest(stm=False)  Copy files to filesystem (see doc).
+def help():
+    test_str = """Available commands (see SPI.md):
+    help()  Print this text.
+    test(stm=False)  Basic hardware test.
+    full_test(stm=False)  Thorough hardware test.
+    fstest(format=False, stm=False)  Filesystem test (see doc).
+    cptest(stm=False)  Copy files to filesystem (see doc).
+stm: True is 256K chip, 5MHz bus. False is 128K chip, 20MHz bus.
 """
-print(test_str)
+    print(test_str)
+
+
+help()

@@ -21,9 +21,13 @@ the subsequent improvements to MicroPython to achieve these advantages:
  7. Alternatively it can support byte-level access using Python slice syntax.
  8. RAM allocations are reduced.
 
-Chips of 2KiB and below store the upper three address bits in the chip address.
-Thus a 2KiB chip looks like 8 chips of 256 bytes each. See
-[6. Small chips case study](./I2C.md#6-small-chips-case-study).
+## 1.1 Release Notes
+
+January 2024 Fixes a bug whereby incorrect page size caused data corruption.
+Thanks are due to Abel Deuring for help in diagnosing and fixing this, also for
+educating me on the behaviour of various types of EEPROM chip. This release also
+supports some chips of 2KiB and below which store the upper three address bits
+in the chip address. See [6. Small chips case study](./I2C.md#6-small-chips-case-study).
 
 ##### [Main readme](../../README.md)
 
@@ -337,7 +341,9 @@ lists the contents. It also prints the outcome of `uos.statvfs` on the array.
 
 Tests copying the source files to the filesystem. The test will fail if the
 filesystem was not formatted. Lists the contents of the mountpoint and prints
-the outcome of `uos.statvfs`.
+the outcome of `uos.statvfs`. This test does not run on ESP8266 owing to a
+missing Python language feature. Use File Copy or `upysh` as described below to
+verify the filesystem.
 
 ## 5.5 File copy
 
@@ -353,7 +359,7 @@ mounted on /eeprom):
 cp('/flash/main.py','/eeprom/')
 ```
 
-See `upysh` in [micropython-lib](https://github.com/micropython/micropython-lib.git)
+See `upysh` in [micropython-lib](https://github.com/micropython/micropython-lib/tree/master/micropython/upysh)
 for filesystem tools for use at the REPL.
 
 # 6. Small chips case study

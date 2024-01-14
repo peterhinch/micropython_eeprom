@@ -1,0 +1,8 @@
+{
+  "urls": [
+    ["bdevice.py", "github:peterhinch/micropython_eeprom/bdevice.py"],
+    ["eep_i2c.py", "github:peterhinch/micropython_eeprom/eeprom/i2c/eep_i2c.py"],
+    ["eeprom_i2c.py", "github:peterhinch/micropython_eeprom/eeprom/i2c/eeprom_i2c.py"]
+  ],
+  "version": "0.1"
+}

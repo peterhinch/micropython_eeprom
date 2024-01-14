@@ -82,7 +82,29 @@ The SPI bus is fast: wiring should be short and direct.
  2. `bdevice.py` (In root directory) Base class for the device driver.
  3. `eep_spi.py` Test programs for above.
 
-Installation: copy files 1 and 2 (optionally 3) to the target filesystem.
+## 3.1 Installation
+
+This installs the first three files in the `lib` directory.
+
+On networked hardware this may be done with `mip` which is included in recent
+firmware. On non-networked hardware this is done using the official
+[mpremote utility](http://docs.micropython.org/en/latest/reference/mpremote.html)
+which should be installed on the PC as described in this doc.
+
+#### Any hardware
+
+On the PC issue:
+```bash
+$ mpremote mip install "github:peterhinch/micropython_eeprom/eeprom/spi"
+```
+
+#### Networked hardware
+
+At the device REPL issue:
+```python
+>>> import mip
+>>> mip.install("github:peterhinch/micropython_eeprom/eeprom/spi")
+```
 
 # 4. The device driver
 

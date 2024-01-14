@@ -165,11 +165,12 @@ def full_test(stm=False):
         eep[sa : sa + 256] = data
         got = eep[sa : sa + 256]
         if got == data:
-            print(f"Block {block} passed")
+            print(f"Block {block} passed\r", end="")
         else:
             print(f"Block {block} readback failed.")
             break
         block += 1
+    print()
 
 
 def help():

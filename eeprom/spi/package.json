@@ -1,0 +1,8 @@
+{
+  "urls": [
+    ["bdevice.py", "github:peterhinch/micropython_eeprom/bdevice.py"],
+    ["eep_spi.py", "github:peterhinch/micropython_eeprom/eeprom/spi/eep_spi.py"],
+    ["eeprom_spi.py", "github:peterhinch/micropython_eeprom/eeprom/spi/eeprom_spi.py"]
+  ],
+  "version": "0.1"
+}

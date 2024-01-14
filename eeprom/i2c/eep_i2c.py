@@ -152,27 +152,32 @@ def cptest(eep=None):  # Assumes pre-existing filesystem of either type
 
 
 # ***** TEST OF HARDWARE *****
-def full_test(eep=None, block_size=128):
+def full_test(eep=None, block_size=256):
     eep = eep if eep else get_eep()
-    page = 0
+    print(f"Testing with {block_size}byte blocks of random data...")
+    block = 0
     for sa in range(0, len(eep), block_size):
         data = uos.urandom(block_size)
         eep[sa : sa + block_size] = data
         if eep[sa : sa + block_size] == data:
-            print("Page {} passed".format(page))
+            print(f"Block {block} passed\r", end="")
         else:
-            print("Page {} readback failed.".format(page))
-        page += 1
+            print(f"Block {block} readback failed.")
+        block += 1
+    print()
 
+def help():
+    st = """Available commands:
+    help()  Print this text.
+    test()  Basic fuctional test.
+    full_test()  Read-write test of EEPROM chip(s).
+    fstest()  Check or create a filesystem.
+    cptest()  Check a filesystem by copying source files to it.
 
-help = """Available tests:
-test()  Basic fuctional test
-full_test()  Read-write test of EEPROM chip(s)
-fstest()  Check or create a filesystem.
-cptest()  Check a filesystem by copying source files to it.
+    Utilities:
+    get_eep()  Initialise and return an EEPROM instance.
+    cp()  Very crude file copy utility.
+    """
+    print(st)
 
-Utilities:
-get_eep()  Initialise and return an EEPROM instance.
-cp()  Very crude file copy utility.
-"""
-print(help)
+help()

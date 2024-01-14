@@ -1,7 +1,8 @@
 # 1. A MicroPython I2C EEPROM driver
 
 This driver supports chips from the 64KiB 25xx512 series and related chips with
-smaller capacities.
+smaller capacities, now including chips as small as 2KiB with single byte
+addressing.
 
 From one to eight chips may be used to construct a nonvolatile memory module
 with sizes upto 512KiB. The driver allows the memory either to be mounted in
@@ -19,6 +20,10 @@ the subsequent improvements to MicroPython to achieve these advantages:
  6. It supports filesystem mounting.
  7. Alternatively it can support byte-level access using Python slice syntax.
  8. RAM allocations are reduced.
+
+Chips of 2KiB and below store the upper three address bits in the chip address.
+Thus a 2KiB chip looks like 8 chips of 256 bytes each. See
+[6. Small chips case study](./I2C.md#6-small-chips-case-study).
 
 ##### [Main readme](../../README.md)
 
@@ -77,11 +82,31 @@ Other platforms may vary.
 
  1. `eeprom_i2c.py` Device driver.
  2. `bdevice.py` (In root directory) Base class for the device driver.
- 3. `eep_i2c.py` Pyboard test programs for above.
- 4. `wemos_i2c_eeprom.py` Test program using a Wemos D1 mini ESP8266 board.
+ 3. `eep_i2c.py` Pyboard test programs for above (adapt for other hosts).
 
-Installation: copy files 1 and 2 (optionally 3 and/or 4) to the target
-filesystem.
+## 3.1 Installation
+
+This installs the above files in the `lib` directory.
+
+On networked hardware this may be done with `mip` which is included in recent
+firmware. On non-networked hardware this is done using the official
+[mpremote utility](http://docs.micropython.org/en/latest/reference/mpremote.html)
+which should be installed on the PC as described in this doc.
+
+#### Any hardware
+
+On the PC issue:
+```bash
+$ mpremote mip install "github:peterhinch/micropython_eeprom/eeprom/i2c"
+```
+
+#### Networked hardware
+
+At the device REPL issue:
+```python
+>>> import mip
+>>> mip.install("github:peterhinch/micropython_eeprom/eeprom/i2c")
+```
 
 # 4. The device driver
 
@@ -329,4 +354,20 @@ cp('/flash/main.py','/eeprom/')
 ```
 
 See `upysh` in [micropython-lib](https://github.com/micropython/micropython-lib.git)
-for other filesystem tools for use at the REPL.
+for filesystem tools for use at the REPL.
+
+# 6. Small chips case study
+
+A generic 2KiB EEPROM was tested. Performing an I2C scan revealed that it
+occupied 8 I2C addresses starting at 80 (0x50). Note it would be impossible to
+configure such chips in a multi-chip array as all eight addresses are used: the
+chip can be regarded as an array of eight 256 byte virtual chips. The driver was
+therefore initialised as follows:
+```python
+i2c = SoftI2C(scl=Pin(9, Pin.OPEN_DRAIN, value=1), sda=Pin(8, Pin.OPEN_DRAIN, value=1))
+eep = EEPROM(i2c, 256, addr=0x50)
+```
+A hard I2C interface would also work. At risk of stating the obvious it is not
+possible to build a filesystem on a chip of this size. Tests `eep_i2c.test` and
+`eep_i2c.full_test` should be run and will work if the driver is correctly
+configured.

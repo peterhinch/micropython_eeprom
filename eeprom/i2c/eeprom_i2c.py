@@ -40,6 +40,7 @@ class EEPROM(EepromDevice):
         self._i2c_addr = 0  # I2C address of current chip
         self._buf1 = bytearray(1)
         self._addrbuf = bytearray(2)  # Memory offset into current chip
+        self._onebyte = chip_size <= 256  # Single byte address
         # superclass figures out _page_size and _page_mask
         super().__init__(block_size, nchips, chip_size, page_size, verbose)
 
@@ -90,12 +91,14 @@ class EEPROM(EepromDevice):
         start = 0  # Offset into buf.
         while nbytes > 0:
             npage = self._getaddr(addr, nbytes)  # No. of bytes in current page
-            assert npage > 0
+            # assert npage > 0
+            # Offset address into chip: one or two bytes
+            vaddr = self._addrbuf[1:] if self._onebyte else self._addrbuf
             if read:
-                self._i2c.writeto(self._i2c_addr, self._addrbuf)
+                self._i2c.writeto(self._i2c_addr, vaddr)
                 self._i2c.readfrom_into(self._i2c_addr, mvb[start : start + npage])
             else:
-                self._i2c.writevto(self._i2c_addr, (self._addrbuf, buf[start : start + npage]))
+                self._i2c.writevto(self._i2c_addr, (vaddr, buf[start : start + npage]))
                 self._wait_rdy()
             nbytes -= npage
             start += npage

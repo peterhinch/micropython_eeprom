@@ -1,27 +1,57 @@
 # eep_spi.py MicroPython test program for Microchip SPI EEPROM devices.
 
 # Released under the MIT License (MIT). See LICENSE.
-# Copyright (c) 2019-2022 Peter Hinch
+# Copyright (c) 2019-2024 Peter Hinch
 
 import uos
 import time
-from machine import SPI, Pin
+from machine import SPI, Pin, SoftSPI
 from eeprom_spi import EEPROM
 
+ESP8266 = uos.uname().sysname == "esp8266"
 # Add extra pins if using multiple chips
-cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
+if ESP8266:
+    cspins = (Pin(5, Pin.OUT, value=1), Pin(14, Pin.OUT, value=1))
+else:
+    cspins = (Pin(Pin.board.Y5, Pin.OUT, value=1), Pin(Pin.board.Y4, Pin.OUT, value=1))
 
 # Return an EEPROM array. Adapt for platforms other than Pyboard.
 def get_eep(stm):
     if uos.uname().machine.split(" ")[0][:4] == "PYBD":
         Pin.board.EN_3V3.value(1)
         time.sleep(0.1)  # Allow decouplers to charge
+
     if stm:
-        eep = EEPROM(SPI(2, baudrate=5_000_000), cspins, 256)
+        if ESP8266:
+            spi = SoftSPI(baudrate=5_000_000, sck=Pin(4), miso=Pin(0), mosi=Pin(2))
+        else:  # Pyboard
+            spi = SPI(2, baudrate=5_000_000)
+        eep = EEPROM(spi, cspins, 256)
     else:
-        eep = EEPROM(SPI(2, baudrate=20_000_000), cspins, 128)
+        if ESP8266:
+            spi = SoftSPI(baudrate=20_000_000, sck=Pin(4), miso=Pin(0), mosi=Pin(2))
+        else:
+            spi = SPI(2, baudrate=20_000_000)
+        eep = EEPROM(spi, cspins, 128)
     print("Instantiated EEPROM")
     return eep
+
+
+# Yield pseudorandom bytes (random module not available on all ports)
+def psrand8(x=0x3FBA2):
+    while True:
+        x ^= (x & 0x1FFFF) << 13
+        x ^= x >> 17
+        x ^= (x & 0x1FFFFFF) << 5
+        yield x & 0xFF
+
+
+# Given a source of pseudorandom bytes yield pseudorandom 256 byte buffer.
+def psrand256(rand, ba=bytearray(256)):
+    while True:
+        for z in range(256):
+            ba[z] = next(rand)
+        yield ba
 
 
 # Dumb file copy utility to help with managing EEPROM contents at the REPL.
@@ -149,27 +179,35 @@ def cptest(stm=False):  # Assumes pre-existing filesystem of either type
             print("Fail mounting device. Have you formatted it?")
             return
         print("Mounted device.")
-    cp(__file__, "/eeprom/")
-    # We may have the source file or a precompiled binary (*.mpy)
-    cp(__file__.replace("eep", "eeprom"), "/eeprom/")
-    print('Contents of "/eeprom": {}'.format(uos.listdir("/eeprom")))
-    print(uos.statvfs("/eeprom"))
+    try:
+        cp(__file__, "/eeprom/")
+        # We may have the source file or a precompiled binary (*.mpy)
+        cp(__file__.replace("eep", "eeprom"), "/eeprom/")
+        print('Contents of "/eeprom": {}'.format(uos.listdir("/eeprom")))
+        print(uos.statvfs("/eeprom"))
+    except NameError:
+        print("Test cannot be performed by this MicroPython port. Consider using upysh.")
 
 
 # ***** TEST OF HARDWARE *****
 def full_test(stm=False):
     eep = get_eep(stm)
-    block = 0
+    print("Testing with 256 byte blocks of random data...")
+    r = psrand8()  # Instantiate random byte generator
+    ps = psrand256(r)  # Random 256 byte blocks
     for sa in range(0, len(eep), 256):
-        data = uos.urandom(256)
-        eep[sa : sa + 256] = data
-        got = eep[sa : sa + 256]
-        if got == data:
-            print(f"Block {block} passed\r", end="")
+        ea = sa + 256
+        eep[sa:ea] = next(ps)
+        print(f"Address {sa}..{ea} written\r", end="")
+    print()
+    r = psrand8()  # Instantiate new random byte generator with same seed
+    ps = psrand256(r)  # Random 256 byte blocks
+    for sa in range(0, len(eep), 256):
+        ea = sa + 256
+        if eep[sa:ea] == next(ps):
+            print(f"Address {sa}..{ea} readback passed\r", end="")
         else:
-            print(f"Block {block} readback failed.")
-            break
-        block += 1
+            print(f"Address {sa}..{ea} readback failed.")
     print()
 
 

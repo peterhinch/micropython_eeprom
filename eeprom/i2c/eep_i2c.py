@@ -5,18 +5,40 @@
 
 import uos
 import time
-from machine import I2C, Pin
+from machine import I2C, Pin, SoftI2C
 from eeprom_i2c import EEPROM, T24C512
 
 # Return an EEPROM array. Adapt for platforms other than Pyboard or chips
 # smaller than 64KiB.
 def get_eep():
+    # Special code for Pyboard D: enable 3.3V output
     if uos.uname().machine.split(" ")[0][:4] == "PYBD":
         Pin.board.EN_3V3.value(1)
         time.sleep(0.1)  # Allow decouplers to charge
-    eep = EEPROM(I2C(2), T24C512)
+
+    if uos.uname().sysname == "esp8266":
+        eep = EEPROM(SoftI2C(scl=Pin(13, Pin.OPEN_DRAIN), sda=Pin(12, Pin.OPEN_DRAIN)), T24C512)
+    else:
+        eep = EEPROM(I2C(2), T24C512)  # Pyboard D or 1.x
     print("Instantiated EEPROM")
     return eep
+
+
+# Yield pseudorandom bytes (random module not available on all ports)
+def psrand8(x=0x3FBA2):
+    while True:
+        x ^= (x & 0x1FFFF) << 13
+        x ^= x >> 17
+        x ^= (x & 0x1FFFFFF) << 5
+        yield x & 0xFF
+
+
+# Given a source of pseudorandom bytes yield pseudorandom 256 byte buffer.
+def psrand256(rand, ba=bytearray(256)):
+    while True:
+        for z in range(256):
+            ba[z] = next(rand)
+        yield ba
 
 
 # Dumb file copy utility to help with managing EEPROM contents at the REPL.
@@ -144,27 +166,38 @@ def cptest(eep=None):  # Assumes pre-existing filesystem of either type
             print("Fail mounting device. Have you formatted it?")
             return
         print("Mounted device.")
-    cp(__file__, "/eeprom/")
-    # We may have the source file or a precompiled binary (*.mpy)
-    cp(__file__.replace("eep", "eeprom"), "/eeprom/")
-    print('Contents of "/eeprom": {}'.format(uos.listdir("/eeprom")))
-    print(uos.statvfs("/eeprom"))
+    try:
+        cp(__file__, "/eeprom/")
+        # We may have the source file or a precompiled binary (*.mpy)
+        cp(__file__.replace("eep", "eeprom"), "/eeprom/")
+        print('Contents of "/eeprom": {}'.format(uos.listdir("/eeprom")))
+        print(uos.statvfs("/eeprom"))
+    except NameError:
+        print("Test cannot be performed by this MicroPython port. Consider using upysh.")
 
 
 # ***** TEST OF HARDWARE *****
-def full_test(eep=None, block_size=256):
+# Write pseudorandom data to entire array, then read back. Fairly rigorous test.
+def full_test(eep=None):
     eep = eep if eep else get_eep()
-    print(f"Testing with {block_size}byte blocks of random data...")
-    block = 0
-    for sa in range(0, len(eep), block_size):
-        data = uos.urandom(block_size)
-        eep[sa : sa + block_size] = data
-        if eep[sa : sa + block_size] == data:
-            print(f"Block {block} passed\r", end="")
-        else:
-            print(f"Block {block} readback failed.")
-        block += 1
+    print("Testing with 256 byte blocks of random data...")
+    r = psrand8()  # Instantiate random byte generator
+    ps = psrand256(r)  # Random 256 byte blocks
+    for sa in range(0, len(eep), 256):
+        ea = sa + 256
+        eep[sa:ea] = next(ps)
+        print(f"Address {sa}..{ea} written\r", end="")
     print()
+    r = psrand8()  # Instantiate new random byte generator with same seed
+    ps = psrand256(r)  # Random 256 byte blocks
+    for sa in range(0, len(eep), 256):
+        ea = sa + 256
+        if eep[sa:ea] == next(ps):
+            print(f"Address {sa}..{ea} readback passed\r", end="")
+        else:
+            print(f"Address {sa}..{ea} readback failed.")
+    print()
+
 
 def help():
     st = """Available commands:
@@ -179,5 +212,6 @@ def help():
     cp()  Very crude file copy utility.
     """
     print(st)
+
 
 help()

@@ -16,10 +16,12 @@ def get_eep():
         Pin.board.EN_3V3.value(1)
         time.sleep(0.1)  # Allow decouplers to charge
 
-    if uos.uname().sysname == "esp8266":
+    if uos.uname().sysname == "esp8266":  # ESP8266 test fixture
         eep = EEPROM(SoftI2C(scl=Pin(13, Pin.OPEN_DRAIN), sda=Pin(12, Pin.OPEN_DRAIN)), T24C512)
-    else:
-        eep = EEPROM(I2C(2), T24C512)  # Pyboard D or 1.x
+    elif uos.uname().sysname == "esp32":  # ChronoDot on ESP32-S3
+        eep = EEPROM(SoftI2C(scl=Pin(9, Pin.OPEN_DRAIN), sda=Pin(8, Pin.OPEN_DRAIN)), 256, addr=0x50)        
+    else:  # Pyboard D test fixture
+        eep = EEPROM(I2C(2), T24C512)
     print("Instantiated EEPROM")
     return eep
 

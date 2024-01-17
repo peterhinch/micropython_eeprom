@@ -24,14 +24,16 @@ def get_eep(stm):
     if stm:
         if ESP8266:
             spi = SoftSPI(baudrate=5_000_000, sck=Pin(4), miso=Pin(0), mosi=Pin(2))
-        else:  # Pyboard
-            spi = SPI(2, baudrate=5_000_000)
+        else:  # Pyboard. 1.22.1 hard SPI seems to have a read bug
+            # spi = SPI(2, baudrate=5_000_000)
+            spi = SoftSPI(baudrate=5_000_000, sck=Pin('Y6'), miso=Pin('Y7'), mosi=Pin('Y8'))
         eep = EEPROM(spi, cspins, 256)
     else:
         if ESP8266:
             spi = SoftSPI(baudrate=20_000_000, sck=Pin(4), miso=Pin(0), mosi=Pin(2))
         else:
-            spi = SPI(2, baudrate=20_000_000)
+            # spi = SPI(2, baudrate=20_000_000)
+            spi = SoftSPI(baudrate=20_000_000, sck=Pin('Y6'), miso=Pin('Y7'), mosi=Pin('Y8'))
         eep = EEPROM(spi, cspins, 128)
     print("Instantiated EEPROM")
     return eep

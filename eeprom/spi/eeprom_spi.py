@@ -46,10 +46,10 @@ class EEPROM(EepromDevice):
     def _devtest(self, cs, la, v=None):
         buf = bytearray(1)
         mvp = self._mvp
-        mvp[:] = b"\0" * 5
-        # mvp[1] = la >> 16
-        # mvp[2] = (la >> 8) & 0xFF
-        # mvp[3] = la & 0xFF
+        # mvp[:] = b"\0" * 5  # test with addr 0
+        mvp[1] = la >> 16
+        mvp[2] = (la >> 8) & 0xFF
+        mvp[3] = la & 0xFF
         mvp[0] = _READ
         cs(0)
         self._spi.write(mvp[:4])

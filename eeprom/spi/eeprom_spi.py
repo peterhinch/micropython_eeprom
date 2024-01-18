@@ -89,6 +89,7 @@ class EEPROM(EepromDevice):
     def _wait_rdy(self):  # After a write, wait for device to become ready
         mvp = self._mvp
         cs = self._ccs  # Chip is already current
+        tstart = time.ticks_ms()
         while True:
             mvp[0] = _RDSR
             cs(0)
@@ -97,6 +98,8 @@ class EEPROM(EepromDevice):
             if not mvp[1]:  # We never set BP0 or BP1 so ready state is 0.
                 break
             time.sleep_ms(1)
+            if time.ticks_diff(ticks_ms(), tstart) > 1000:
+                raise OSError("Device ready timeout.")
 
     # Given an address, set current chip select and address buffer.
     # Return the number of bytes that can be processed in the current page.

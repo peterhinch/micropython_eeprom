@@ -98,7 +98,7 @@ class EEPROM(EepromDevice):
             if not mvp[1]:  # We never set BP0 or BP1 so ready state is 0.
                 break
             time.sleep_ms(1)
-            if time.ticks_diff(ticks_ms(), tstart) > 1000:
+            if time.ticks_diff(time.ticks_ms(), tstart) > 1000:
                 raise OSError("Device ready timeout.")
 
     # Given an address, set current chip select and address buffer.

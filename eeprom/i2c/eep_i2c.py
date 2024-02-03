@@ -64,6 +64,8 @@ def cp(source, dest):
 
 # ***** TEST OF DRIVER *****
 def _testblock(eep, bs):
+    if bs >= len(eep):
+        bs = len(eep) // 2
     d0 = b"this >"
     d1 = b"<is the boundary"
     d2 = d0 + d1
@@ -93,6 +95,9 @@ def _testblock(eep, bs):
 def test(eep=None):
     eep = eep if eep else get_eep()
     sa = 1000
+    address_range = 256
+    if sa + address_range > len(eep):
+        sa = (len(eep) - address_range) // 2
     for v in range(256):
         eep[sa + v] = v
     for v in range(256):
@@ -103,6 +108,8 @@ def test(eep=None):
         print("Test of byte addressing passed")
     data = uos.urandom(30)
     sa = 2000
+    if sa + len(data) > len(eep):
+        sa = (len(eep) - len(data)) // 2
     eep[sa : sa + 30] = data
     if eep[sa : sa + 30] == data:
         print("Test of slice readback passed")
@@ -126,7 +133,8 @@ def test(eep=None):
         print("Test chip boundary skipped: only one chip!")
     pe = eep.get_page_size() + 1  # One byte past page
     eep[pe] = 0xFF
-    eep[:257] = b"\0" * 257
+    write_length  = min(257, len(eep))
+    eep[:write_length] = b"\0" * write_length
     print("Test page size: ", end="")
     if eep[pe]:
         print("FAIL")

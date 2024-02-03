@@ -22,8 +22,11 @@ The driver has the following attributes:
 
 As of Jan 2024 this driver has been updated to fix a bug where the device page
 size was less than 256. A further aim was to make the driver more generic, with
-a better chance of working with other SPI EEPROM chips. The constructor has
+a high chance of working with other SPI EEPROM chips. The constructor has
 additional optional args to support this.
+
+On Pyboard D soft SPI should be used pending resolution of
+[this PR](https://github.com/micropython/micropython/pull/13549).
 
 Code samples assume one or more Microchip devices. If using the STM chip the
 SPI baudrate should be 5MHz and the chip size must be specified to the `EEPROM`

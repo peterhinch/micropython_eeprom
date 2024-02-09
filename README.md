@@ -59,24 +59,31 @@ These currently include Microchip and STM EEPROM chips and
 largest EEPROM chip uses SPI: see [below](./README.md#2-choice-of-interface)
 for a discussion of the merits and drawbacks of each interface.
 
+The EEPROM drivers have been updated to be generic. Page size can be auto
+detected and the drivers have been tested with a wide variety of chips in sizes
+from 256 bytes to 256KiB. Thanks are due to Abel Deuring for doing much of this
+testing. That said, it is not possible to guarantee that all possible device
+types will work.
+
 Supported devices. Microchip manufacture each chip in different variants with
 letters denoted by "xx" below. The variants cover parameters such as minimum
 Vcc value and do not affect the API. There are two variants of the STM chip,
 M95M02-DRMN6TP and M95M02-DWMN3TP/K. The latter has a wider temperature range.
 
-In the table below the Interface column includes page size in bytes.  
+The interface column includes page size where relevant. The EEPROM driver can
+auto-detect this and report it for a given chip.
 
 | Manufacturer | Part      | Interface | Bytes   | Technology | Docs                          |
 |:------------:|:---------:|:---------:|:-------:|:----------:|:-----------------------------:|
 | Various      | Various   | SPI 4096  | <=32MiB |   Flash    | [FLASH.md](./flash/FLASH.md)  |
-| STM          | M95M02-DR | SPI 256   | 256KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
-| Microchip    | 25xx1024  | SPI 256   | 128KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
-| Microchip    | 25xx512*  | SPI 256   |  64KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
-| Microchip    | 24xx512   | I2C 128   |  64KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
-| Microchip    | 24xx256   | I2C 128   |  32KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
-| Microchip    | 24xx128   | I2C 128   |  16KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
-| Microchip    | 24xx64    | I2C 128   |   8KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
-| Microchip    | 24xx32    | I2C 32    |   4KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| STM          | M95M02-DR | SPI       | 256KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
+| Microchip    | 25xx1024  | SPI       | 128KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
+| Microchip    | 25xx512*  | SPI       |  64KiB  |   EEPROM   | [SPI.md](./eeprom/spi/SPI.md) |
+| Microchip    | 24xx512   | I2C       |  64KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Microchip    | 24xx256   | I2C       |  32KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Microchip    | 24xx128   | I2C       |  16KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Microchip    | 24xx64    | I2C       |   8KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
+| Microchip    | 24xx32    | I2C       |   4KiB  |   EEPROM   | [I2C.md](./eeprom/i2c/I2C.md) |
 | Adafruit     | 4719      | SPI n/a   | 512KiB  |   FRAM     | [FRAM_SPI.md](./fram/FRAM_SPI.md) |
 | Adafruit     | 4718      | SPI n/a   | 256KiB  |   FRAM     | [FRAM_SPI.md](./fram/FRAM_SPI.md) |
 | Adafruit     | 1895      | I2C n/a   |  32KiB  |   FRAM     | [FRAM.md](./fram/FRAM.md)     |
@@ -176,7 +183,7 @@ class.
 A consequence of the above is that the page size in the ioctl does not have any
 necessary connection with the memory hardware, so the drivers enable the value
 to be specified as a constructor argument. Littlefs requires a minimum size of
-128 bytes - 
+128 bytes -
 [theoretically 104](https://github.com/ARMmbed/littlefs/blob/master/DESIGN.md).
 The drivers only allow powers of 2: in principle 128 bytes could be used. The
 default in MicroPython's littlefs implementation is 512 bytes and all testing

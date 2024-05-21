@@ -32,7 +32,7 @@ class EEPROM(EepromDevice):
         page_size=None,
     ):
         self._i2c = i2c
-        if chip_size not in (T24C32, T24C64, T24C128, T24C256, T24C512):
+        if chip_size not in (T24C32, T24C64, T24C128, T24C256, T24C512) and verbose:
             print("Warning: possible unsupported chip. Size:", chip_size)
         # Get no. of EEPROM chips
         nchips, min_chip_address = self.scan(verbose, chip_size, addr, max_chips_count)

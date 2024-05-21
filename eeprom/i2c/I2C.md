@@ -166,7 +166,7 @@ Arguments:
  7. `page_size=None` EEPROM chips have a page buffer. By default the driver
  determines the size of this automatically. It is possible to override this by
  passing an integer being the page size in bytes: 16, 32, 64, 128 or 256. See
- [4.1.5 Page size](./I2C.md#414-page-size) for issues surrounding this.
+ [4.1.5 Page size](./I2C.md#415-page-size) for issues surrounding this.
 
 In most cases only the first two arguments are used, with an array being
 instantiated with (for example):
